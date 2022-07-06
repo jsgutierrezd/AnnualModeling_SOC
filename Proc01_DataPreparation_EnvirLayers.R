@@ -374,19 +374,23 @@ climateP4 <- all
 # 6.1) Period 1 -----------------------------------------------------------
 
 covP1 <- c(StatPreds,organismsP1,climateP1)
-terra::writeRaster(covP1,"CovP1984_1986.tif",datatype="FLT4S")
+terra::writeRaster(covP1,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1984_1986.tif",datatype="FLT4S")
+saveRDS(names(covP1),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1984_1986.rds")
 
 # 6.2) Period 2 -----------------------------------------------------------
 
 covP2 <- c(StatPreds,organismsP2,climateP2)
-terra::writeRaster(covP2,"CovP1994_1997.tif",datatype="FLT4S")
+terra::writeRaster(covP2,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1994_1997.tif",datatype="FLT4S")
+saveRDS(names(covP2),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1994_1997.rds")
 
 # 6.3) Period 3 -----------------------------------------------------------
 
 covP3 <- c(StatPreds,organismsP3,climateP3)
-terra::writeRaster(covP3,"CovP2006_2009.tif",datatype="FLT4S")
+terra::writeRaster(covP3,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2006_2009.tif",datatype="FLT4S")
+saveRDS(names(covP3),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2006_2009.rds")
 
 # 6.4) Period 4 -----------------------------------------------------------
 
 covP4 <- c(StatPreds,organismsP4,climateP4)
-terra::writeRaster(covP4,"CovP2016_2019.tif",datatype="FLT4S")
+terra::writeRaster(covP4,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2016_2019.tif",datatype="FLT4S")
+saveRDS(names(covP4),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2016_2019.rds")
