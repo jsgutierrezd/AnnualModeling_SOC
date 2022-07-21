@@ -65,6 +65,10 @@ all <- lapply(all,function(x){
 
 geology <- rast(all) %>% crop(coast,mask=T)
 
+levels(geology[[1]]) <- paste0("geology",1:11)
+levels(geology[[2]]) <- paste0("georeg",1:10)
+writeRaster(geology,"geology.tif",overwrite=T)
+
 # 3.3) Soil ---------------------------------------------------------------
 
 # 3.3.1) Clay layers for different depth intervals ------------------------
