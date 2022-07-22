@@ -1,5 +1,5 @@
 #============================================================================
-# Proc03b_DataModelingP1D2 ------------------------------------------------
+# Proc03c_DataModelingP2D1 ------------------------------------------------
 #============================================================================
 rm(list = ls())
 Sys.setenv(language="EN")
@@ -360,7 +360,7 @@ model_qrf
 
 pred_qrf <- predict(model_qrf, newdata = test_data)
 
-qrf.goof <- gof(sim = exp(pred_qrf[,2]),obs = exp(test_data$SOC_1986t))
+qrf.goof <- gof(sim = pred_qrf[,2],obs = test_data$SOC_1986t)
 
 qrf.goof
 
@@ -381,7 +381,7 @@ my_control <- trainControl(method = "repeatedcv",
 model_list <- caretList(
   fm, data=train_data,
   trControl=my_control,
-  methodList=c("cubist", "lm")
+  methodList=c("xgbTree", "svmLinear")
 )
 
 glm_ensemble <- caretStack(
@@ -400,8 +400,8 @@ ens.goof
 
 fm
 
-covP1 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
-               rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
+covP1 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+               stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
 names(covP1) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds"))
 
@@ -417,10 +417,10 @@ plot(covP1$PCA1_1985Med)
 writeRaster(covP1$PCA1_1985Med,"PCA1_1985med.tif")
 
 
-PCA1_1985Med <- rast("PCA1_1985med.tif")
-covP1 <- c(covP1,PCA1_1985Med)
+PCA1_1985Med <- raster("PCA1_1985med.tif")
+covP1 <- stack(covP1,PCA1_1985Med)
 
-covP1 <- stack(covP1)
+
 beginCluster(n=detectCores()-2,type='SOCK')
 
 unc <- clusterR(covP1[[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])]], predict, 

@@ -29,57 +29,46 @@ usePackage <- function(p) {
 }
 lapply(pckg,usePackage)
 
-
-set.seed(0)
-r <- rast(nrows=10, ncols=10)
-values(r) <- sample(3, ncell(r), replace=TRUE)
-is.factor(r)
-cls <- c("forest", "water", "urban")
-# make the raster start at zero
-x <- r - 1
-levels(x) <- cls
-names(x) <- "land cover"
-is.factor(x)
-x
-
-
 # 3) Predictors loading ---------------------------------------------------
 
-covP1 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1984_1986.tif")
-names(covP1) <- readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1984_1986.rds")
-levels(covP1[[5]]) <- paste0("geology",1:11)
-levels(covP1[[6]]) <- paste0("georeg",1:10)
-plot(covP1[[5]])
+covP1 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
+names(covP1) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds"))
+                  
+covP2 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1996_1997.tif"))
+names(covP2) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1996_1997.rds"))
 
-covP2 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1994_1997.tif")
-names(covP2) <- readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1994_1997.rds")
-levels(covP2[[5]]) <- paste0("geology",1:11)
-levels(covP2[[6]]) <- paste0("georeg",1:10)
+covP3 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2008_2009.tif"))
+names(covP3) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
-covP3 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2006_2009.tif")
-names(covP3) <- readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2006_2009.rds")
-levels(covP3[[5]]) <- paste0("geology",1:11)
-levels(covP3[[6]]) <- paste0("georeg",1:10)
-
-covP4 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2016_2019.tif")
-names(covP4) <- readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2016_2019.rds")
-levels(covP4[[5]]) <- paste0("geology",1:11)
-levels(covP4[[6]]) <- paste0("georeg",1:10)
+covP4 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif"))
+names(covP4) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2018_2019.rds"))
 
 # 4) Data loading ---------------------------------------------------------
 
 data <- read_delim("C:/Users/au704633/OneDrive - Aarhus Universitet/Documents/AARHUS_PhD/DSMactivities/MonitoringGridData/SOCModeling/Points/DataJoined.csv",
                    delim = ";",col_types = "ffddfciiddiciddddid")
 
-databd <- data %>% 
+databd1 <- data %>% 
   filter(Depth==1 & !is.na(OrgC) & !is.na(BDwhole)) %>% 
+  dplyr::select(PointID,BDwhole)
+
+databd2 <- data %>% 
+  filter(Depth==2 & !is.na(OrgC) & !is.na(BDwhole)) %>% 
   dplyr::select(PointID,BDwhole)
 
 # 4.1) Depth 00-25 cm -----------------------------------------------------
 
 data1 <- data %>% 
   filter(Depth==1 & !is.na(OrgC)) %>% 
-  right_join(databd,by="PointID",keep=F) %>% 
+  right_join(databd1,by="PointID",keep=F) %>% 
   mutate(SOC=OrgC*BDwhole.y*25) %>% 
   dplyr::select(PointID,X,Y,Year,SOC) %>% 
   pivot_wider(names_from = Year, values_from = SOC, names_prefix="SOC_")
@@ -88,7 +77,7 @@ data1 <- data %>%
 
 data2 <- data %>% 
   filter(Depth==2 & !is.na(OrgC)) %>% 
-  right_join(databd,by="PointID",keep=F) %>% 
+  right_join(databd2,by="PointID",keep=F) %>% 
   mutate(SOC=OrgC*BDwhole.y*25) %>% 
   dplyr::select(PointID,X,Y,Year,SOC) %>% 
   pivot_wider(names_from = Year, values_from = SOC, names_prefix="SOC_")
@@ -97,47 +86,50 @@ data2 <- data %>%
 
 # 5.1) SOC 00-25 cm -------------------------------------------------------
 
-data_sp <- vect(data1, geom=c("X", "Y"),crs="epsg:25832")# %>%  project("epsg:25832")#Data frame as spatial points data frame
-data_sp
+data_sp1 <- vect(data1, geom=c("X", "Y"),crs="epsg:25832")# %>%  project("epsg:25832")#Data frame as spatial points data frame
+data_sp1
 
-dataP1D1 <- cbind(data1[,4],terra::extract(covP1,data_sp))
+dataP1D1 <- cbind(data1[,4],terra::extract(covP1,data_sp1))
 dataP1D1$ID <- NULL
 dataP1D1 <- dataP1D1 %>% na.omit
 write_csv(dataP1D1,"RegMat_P1D1.csv")
 
-dataP2D1 <- cbind(data1[,5],terra::extract(covP2,data_sp))
+dataP2D1 <- cbind(data1[,5],terra::extract(covP2,data_sp1))
 dataP2D1$ID <- NULL
 dataP2D1 <- dataP2D1 %>% na.omit
 write_csv(dataP2D1,"RegMat_P2D1.csv")
 
-dataP3D1 <- cbind(data1[,6],terra::extract(covP3,data_sp))
+dataP3D1 <- cbind(data1[,6],terra::extract(covP3,data_sp1))
 dataP3D1$ID <- NULL
 dataP3D1 <- dataP3D1 %>% na.omit
 write_csv(dataP3D1,"RegMat_P3D1.csv")
 
-dataP4D1 <- cbind(data1[,7],terra::extract(covP4,data_sp))
+dataP4D1 <- cbind(data1[,7],terra::extract(covP4,data_sp1))
 dataP4D1$ID <- NULL
 dataP4D1 <- dataP4D1 %>% na.omit
 write_csv(dataP4D1,"RegMat_P4D1.csv")
 
 # 5.2) SOC 25-50 cm -------------------------------------------------------
 
-dataP1D2 <- cbind(data2[,4],terra::extract(covP1,data_sp))
+data_sp2 <- vect(data2, geom=c("X", "Y"),crs="epsg:25832")# %>%  project("epsg:25832")#Data frame as spatial points data frame
+data_sp2
+
+dataP1D2 <- cbind(data2[,4],terra::extract(covP1,data_sp2))
 dataP1D2$ID <- NULL
 dataP1D2 <- dataP1D2 %>% na.omit
 write_csv(dataP1D2,"RegMat_P1D2.csv")
 
-dataP2D2 <- cbind(data2[,5],terra::extract(covP2,data_sp))
+dataP2D2 <- cbind(data2[,5],terra::extract(covP2,data_sp2))
 dataP2D2$ID <- NULL
 dataP2D2 <- dataP2D2 %>% na.omit
 write_csv(dataP2D2,"RegMat_P2D2.csv")
 
-dataP3D2 <- cbind(data2[,6],terra::extract(covP3,data_sp))
+dataP3D2 <- cbind(data2[,6],terra::extract(covP3,data_sp2))
 dataP3D2$ID <- NULL
 dataP3D2 <- dataP3D2 %>% na.omit
 write_csv(dataP3D2,"RegMat_P3D2.csv")
 
-dataP4D2 <- cbind(data2[,7],terra::extract(covP4,data_sp))
+dataP4D2 <- cbind(data2[,7],terra::extract(covP4,data_sp2))
 dataP4D2$ID <- NULL
 dataP4D2 <- dataP4D2 %>% na.omit
 write_csv(dataP4D2,"RegMat_P4D2.csv")

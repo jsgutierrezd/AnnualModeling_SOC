@@ -21,7 +21,8 @@ pckg <- c('terra',
           'magrittr',
           'devtools',
           'raster',
-          'parallel'
+          'parallel',
+          'rassta'
 )
 
 usePackage <- function(p) {
@@ -65,9 +66,10 @@ all <- lapply(all,function(x){
 
 geology <- rast(all) %>% crop(coast,mask=T)
 
-levels(geology[[1]]) <- paste0("geology",1:11)
-levels(geology[[2]]) <- paste0("georeg",1:10)
-writeRaster(geology,"geology.tif",overwrite=T)
+dummygeo1 <- dummies(geology[[1]],preval=1)
+dummygeo2 <- dummies(geology[[2]],preval=1)
+dummygeo1 <- dummygeo1[[-nlyr(dummygeo1)]]
+dummygeo2 <- dummygeo2[[-nlyr(dummygeo2)]]
 
 # 3.3) Soil ---------------------------------------------------------------
 
@@ -87,9 +89,16 @@ soil <- rast(all) %>% crop(coast,mask=T)
 
 
 # 4) Static predictors raster stack ---------------------------------------
-
-StatPreds <- c(soil,geology,geomorphology)
+StatPreds <- c(soil,dummygeo1,dummygeo2,geomorphology)
 names(StatPreds)
+
+terra::writeRaster(StatPreds,
+                   "O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif",
+                   datatype="FLT2S",
+                   overwrite=T)
+
+saveRDS(names(StatPreds),
+        "O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds")
 
 
 # 5) Dynamic predictors ---------------------------------------------------
@@ -118,13 +127,17 @@ indicesL5 <- function(bandstack){
   
   wetness <- bandstack[[1]]*0.0315 + bandstack[[2]]*0.2021 + bandstack[[3]]*0.3102 + 
     bandstack[[4]]*0.1594 + bandstack[[5]]*0.6806 + bandstack[[6]]*(-0.6109)
-  indices <- c(ndvi,kndvi,evi,savi,bsi,str,brightness,greenness,wetness)
-  return(indices)
+  
+  msavi <- (2*bandstack[[4]] + 1- sqrt((2*bandstack[[4]] + 1)^2 - 8 * (bandstack[[4]] - bandstack[[3]])))/2
+ 
+   indices <- c(ndvi,kndvi,evi,savi,msavi,bsi,str,brightness,greenness,wetness)
+ 
+    return(indices)
 }
 
 # 5.1.1) Period 1 1984-1986 -----------------------------------------------
 
-paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year1984_1986",full.names = T)
+paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year1985_1986",full.names = T)
 
 all <- list()
 for (i in 1:length(paths)) {
@@ -135,46 +148,25 @@ for (i in 1:length(paths)) {
 
 }
 
-
-# a) 1984 -----------------------------------------------------------------
-ind1984med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
-ind1984p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
-ind1984p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
-
 # b) 1985 -----------------------------------------------------------------
-ind1985med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
-ind1985p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
-ind1985p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
+ind1985med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
+ind1985p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
+ind1985p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
 # c) 1986 -----------------------------------------------------------------
-ind1986med <- app(all[[3]][[1:6]], fun=indicesL5, cores =15)
-ind1986p10 <- app(all[[3]][[7:12]], fun=indicesL5, cores =15)
-ind1986p90 <- app(all[[3]][[13:18]], fun=indicesL5, cores =15)
-
-# d) 1984-1986 ------------------------------------------------------------
-
-all <- list.files("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Aggregatedperperiod/Period1/",
-                          pattern = "tiff$|tif$",
-                          full.names = TRUE
-  ) %>% rast() %>% crop(coast,mask=T)
-
-
-indP1med <- app(all[[1:6]], fun=indicesL5, cores =15)
-indP1p10 <- app(all[[7:12]], fun=indicesL5, cores =15)
-indP1p90 <- app(all[[13:18]], fun=indicesL5, cores =15)
-
+ind1986med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
+ind1986p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
+ind1986p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
 # e) Period 1 layers (organisms) ------------------------------------------
 
-organismsP1 <- c(ind1984med,ind1984p10,ind1984p90,
-                 ind1985med,ind1985p10,ind1985p90,
-                 ind1986med,ind1986p10,ind1986p90,
-                 indP1med, indP1p10, indP1p90)
+organismsP1 <- c(ind1985med,ind1985p10,ind1985p90,
+                 ind1986med,ind1986p10,ind1986p90)
 
 
-# 5.1.2) Period 2 1994-1997 -----------------------------------------------
+# 5.1.2) Period 2 1996-1997 -----------------------------------------------
 
-paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year1994_1997",full.names = T)
+paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year1996_1997",full.names = T)
 
 all <- list()
 for (i in 1:length(paths)) {
@@ -185,54 +177,24 @@ for (i in 1:length(paths)) {
 
 }
 
-
-
-# a) 1994 -----------------------------------------------------------------
-ind1994med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
-ind1994p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
-ind1994p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
-
-# b) 1995 -----------------------------------------------------------------
-ind1995med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
-ind1995p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
-ind1995p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
-
 # c) 1996 -----------------------------------------------------------------
-ind1996med <- app(all[[3]][[1:6]], fun=indicesL5, cores =15)
-ind1996p10 <- app(all[[3]][[7:12]], fun=indicesL5, cores =15)
-ind1996p90 <- app(all[[3]][[13:18]], fun=indicesL5, cores =15)
+ind1996med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
+ind1996p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
+ind1996p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
 # d) 1997 -----------------------------------------------------------------
-ind1997med <- app(all[[4]][[1:6]], fun=indicesL5, cores =15)
-ind1997p10 <- app(all[[4]][[7:12]], fun=indicesL5, cores =15)
-ind1997p90 <- app(all[[4]][[13:18]], fun=indicesL5, cores =15)
-
-
-# e) 1994-1997 ------------------------------------------------------------
-
-all <- list.files("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Aggregatedperperiod/Period2/",
-                  pattern = "tiff$|tif$",
-                  full.names = TRUE
-) %>% rast() %>% crop(coast,mask=T)
-
-indP2med <- app(all[[1:6]], fun=indicesL5, cores =15)
-indP2p10 <- app(all[[7:12]], fun=indicesL5, cores =15)
-indP2p90 <- app(all[[13:18]], fun=indicesL5, cores =15)
-
+ind1997med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
+ind1997p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
+ind1997p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
 # f) Period 2 layers (organisms) ------------------------------------------
 
-organismsP2 <- c(ind1994med,ind1994p10,ind1994p90,
-                 ind1995med,ind1995p10,ind1995p90,
-                 ind1996med,ind1996p10,ind1996p90,
-                 ind1997med,ind1997p10,ind1997p90,
-                 indP2med,
-                 indP2p10,
-                 indP2p90)
+organismsP2 <- c(ind1996med,ind1996p10,ind1996p90,
+                 ind1997med,ind1997p10,ind1997p90)
 
-# 5.1.3) Period 3 2006-2009 -----------------------------------------------
+# 5.1.3) Period 3 2008-2009 -----------------------------------------------
 
-paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year2006_2009",full.names = T)
+paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year2008_2009",full.names = T)
 
 all <- list()
 for (i in 1:length(paths)) {
@@ -243,53 +205,26 @@ for (i in 1:length(paths)) {
 
 }
 
-# a) 2006 -----------------------------------------------------------------
-ind2006med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
-ind2006p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
-ind2006p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
-
-# b) 2007 -----------------------------------------------------------------
-ind2007med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
-ind2007p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
-ind2007p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
-
 # c) 2008 -----------------------------------------------------------------
-ind2008med <- app(all[[3]][[1:6]], fun=indicesL5, cores =15)
-ind2008p10 <- app(all[[3]][[7:12]], fun=indicesL5, cores =15)
-ind2008p90 <- app(all[[3]][[13:18]], fun=indicesL5, cores =15)
+ind2008med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
+ind2008p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
+ind2008p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
 # d) 2009 -----------------------------------------------------------------
-ind2009med <- app(all[[4]][[1:6]], fun=indicesL5, cores =15)
-ind2009p10 <- app(all[[4]][[7:12]], fun=indicesL5, cores =15)
-ind2009p90 <- app(all[[4]][[13:18]], fun=indicesL5, cores =15)
-
-
-# e) 2006-2009 ------------------------------------------------------------
-
-all <- list.files("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Aggregatedperperiod/Period3/",
-                  pattern = "tiff$|tif$",
-                  full.names = TRUE
-) %>% rast() %>% crop(coast,mask=T)
-
-indP3med <- app(all[[1:6]], fun=indicesL5, cores =15)
-indP3p10 <- app(all[[7:12]], fun=indicesL5, cores =15)
-indP3p90 <- app(all[[13:18]], fun=indicesL5, cores =15)
+ind2009med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
+ind2009p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
+ind2009p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
 
 # f) Period 3 layers (organisms) ------------------------------------------
 
-organismsP3 <- c(ind2006med,ind2006p10,ind2006p90,
-                 ind2007med,ind2007p10,ind2007p90,
-                 ind2008med,ind2008p10,ind2008p90,
-                 ind2009med,ind2009p10,ind2009p90,
-                 indP3med,
-                 indP3p10,
-                 indP3p90)
+organismsP3 <- c(ind2008med,ind2008p10,ind2008p90,
+                 ind2009med,ind2009p10,ind2009p90)
 
 
-#  5.1.4) Period 4 2016-2019 ----------------------------------------------
+#  5.1.4) Period 4 2018-2019 ----------------------------------------------
 
-paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year2016_2019",full.names = T)
+paths <- dir("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Year2018_2019",full.names = T)
 
 all <- list()
 for (i in 1:length(paths)) {
@@ -300,49 +235,21 @@ for (i in 1:length(paths)) {
 
 }
 
-# a) 2016 -----------------------------------------------------------------
-ind2016med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
-ind2016p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
-ind2016p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
-
-# b) 2017 -----------------------------------------------------------------
-ind2017med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
-ind2017p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
-ind2017p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
-
 # c) 2018 -----------------------------------------------------------------
-ind2018med <- app(all[[3]][[1:6]], fun=indicesL5, cores =15)
-ind2018p10 <- app(all[[3]][[7:12]], fun=indicesL5, cores =15)
-ind2018p90 <- app(all[[3]][[13:18]], fun=indicesL5, cores =15)
+ind2018med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
+ind2018p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
+ind2018p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
 # d) 2019 -----------------------------------------------------------------
-ind2019med <- app(all[[4]][[1:6]], fun=indicesL5, cores =15)
-ind2019p10 <- app(all[[4]][[7:12]], fun=indicesL5, cores =15)
-ind2019p90 <- app(all[[4]][[13:18]], fun=indicesL5, cores =15)
-
-
-# e) 2016 - 2019 ----------------------------------------------------------
-
-all <- list.files("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Aggregatedperperiod/Period4/",
-                  pattern = "tiff$|tif$",
-                  full.names = TRUE
-) %>% rast() %>% crop(coast,mask=T)
-
-indP4med <- app(all[[1:6]], fun=indicesL5, cores =15)
-indP4p10 <- app(all[[7:12]], fun=indicesL5, cores =15)
-indP4p90 <- app(all[[13:18]], fun=indicesL5, cores =15)
+ind2019med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
+ind2019p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
+ind2019p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
 
 # f) Period 4 layers (organisms) ------------------------------------------
 
-organismsP4 <- c(ind2016med,ind2016p10,ind2016p90,
-                 ind2017med,ind2017p10,ind2017p90,
-                 ind2018med,ind2018p10,ind2018p90,
-                 ind2019med,ind2019p10,ind2019p90,
-                 indP4med,
-                 indP4p10,
-                 indP4p90)
-
+organismsP4 <- c(ind2018med,ind2018p10,ind2018p90,
+                 ind2019med,ind2019p10,ind2019p90)
 
 
 # 5.2) Climate ------------------------------------------------------------
@@ -384,26 +291,26 @@ all <- list.files("O:/Tech_AGRO/Jord/Sebastian/BIOLAYERS_CHELSA1985_2021_30M/mon
 climateP4 <- all
 
 
-
-# 6) Static and dynamic raster stack --------------------------------------
-
+# 6) Dynamic raster stacks ------------------------------------------------
 
 # 6.1) Period 1 -----------------------------------------------------------
 start <- Sys.time()
 organismsP1 <- resample(organismsP1,StatPreds)
 climateP1 <- resample(climateP1,StatPreds)
-covP1 <- c(StatPreds,organismsP1,climateP1)
-terra::writeRaster(covP1,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1984_1986.tif",datatype="FLT4S",overwrite=T)
-names(covP1) <- c(names(covP1)[1:24],paste0(c("ndvi","kndvi","evi",
-                                              "savi","bsi","str",
-                                              "brightness","greenness","wetness") %>% rep(12) %>% as.factor(),
-                                            gl(3,9,labels=c("Med","P10","P90")),
-                                            "_",
-                                            gl(4,27,labels=c("1984","1985","1986","1984_1986"))),
-                  names(covP1)[133:189])
-
+covP1 <- c(organismsP1,climateP1)
+terra::writeRaster(covP1,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif",datatype="FLT4S",overwrite=T)
 names(covP1)
-saveRDS(names(covP1),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1984_1986.rds")
+names(covP1) <- c(paste0(c("ndvi","kndvi","evi",
+                           "savi","msavi","bsi",
+                           "str","brightness",
+                           "greenness","wetness") %>% rep(6) %>% as.factor(),
+                                            gl(3,10,labels=c("Med","P10","P90")),
+                                            "_",
+                                            gl(2,30,labels=c("1985","1986"))),
+                  names(covP1)[61:98])
+                  
+names(covP1)
+saveRDS(names(covP1),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds")
 
 
 # # 6.2) Period 2 -----------------------------------------------------------
@@ -411,60 +318,51 @@ saveRDS(names(covP1),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYea
 
 organismsP2 <- resample(organismsP2,StatPreds)
 climateP2 <- resample(climateP2,StatPreds)
-covP2 <- c(StatPreds,organismsP2,climateP2)
-terra::writeRaster(covP2,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1994_1997.tif",datatype="FLT4S",overwrite=T)
+covP2 <- c(organismsP2,climateP2)
+terra::writeRaster(covP2,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1996_1997.tif",datatype="FLT4S",overwrite=T)
 
-covP2 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP1994_1997.tif")
-
-
-names(covP2) <- c(names(covP2)[1:24],paste0(c("ndvi","kndvi","evi",
-                                              "savi","bsi","str",
-                                              "brightness","greenness","wetness") %>% rep(15) %>% as.factor(),
-                                            gl(3,9,labels=c("Med","P10","P90")),
-                                            "_",
-                                            gl(5,27,labels=c("1994","1995","1996","1997","1994_1997"))),
-                  names(covP2)[160:235])
-
-names(covP2)
-saveRDS(names(covP2),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP1994_1997.rds")
+names(covP2) <- c(paste0(c("ndvi","kndvi","evi",
+                           "savi","msavi","bsi",
+                           "str","brightness",
+                           "greenness","wetness") %>% rep(6) %>% as.factor(),
+                         gl(3,10,labels=c("Med","P10","P90")),
+                         "_",
+                         gl(2,30,labels=c("1996","1997"))),
+                  names(covP2)[61:98])
+saveRDS(names(covP2),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1996_1997.rds")
 
 # 6.3) Period 3 -----------------------------------------------------------
 
 organismsP3 <- resample(organismsP3,StatPreds)
 climateP3 <- resample(climateP3,StatPreds)
-covP3 <- c(StatPreds,organismsP3,climateP3)
-terra::writeRaster(covP3,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2006_2009.tif",datatype="FLT4S",overwrite=T)
-covP3 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2006_2009.tif")
+covP3 <- c(organismsP3,climateP3)
+terra::writeRaster(covP3,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2008_2009.tif",datatype="FLT4S",overwrite=T)
 
+names(covP3) <- c(paste0(c("ndvi","kndvi","evi",
+                           "savi","msavi","bsi",
+                           "str","brightness",
+                           "greenness","wetness") %>% rep(6) %>% as.factor(),
+                         gl(3,10,labels=c("Med","P10","P90")),
+                         "_",
+                         gl(2,30,labels=c("2008","2009"))),
+                  names(covP3)[61:98])
 
-names(covP3) <- c(names(covP3)[1:24],paste0(c("ndvi","kndvi","evi",
-                                              "savi","bsi","str",
-                                              "brightness","greenness","wetness") %>% rep(15) %>% as.factor(),
-                                            gl(3,9,labels=c("Med","P10","P90")),
-                                            "_",
-                                            gl(5,27,labels=c("2006","2007","2008","2009","2006_2009"))),
-                  names(covP3)[160:235])
-
-names(covP3)
-saveRDS(names(covP3),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2006_2009.rds")
+saveRDS(names(covP3),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds")
 
 # 6.4) Period 4 -----------------------------------------------------------
 
 organismsP4 <- resample(organismsP4,StatPreds)
 climateP4 <- resample(climateP4,StatPreds)
-covP4 <- c(StatPreds,organismsP4,climateP4)
-terra::writeRaster(covP4,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2016_2019.tif",datatype="FLT4S",overwrite=T)
+covP4 <- c(organismsP4,climateP4)
+terra::writeRaster(covP4,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif",datatype="FLT4S",overwrite=T)
 
-covP4 <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/CovP2016_2019.tif")
-
-names(covP4)
-names(covP4) <- c(names(covP4)[1:24],paste0(c("ndvi","kndvi","evi",
-                                              "savi","bsi","str",
-                                              "brightness","greenness","wetness") %>% rep(15) %>% as.factor(),
-                                            gl(3,9,labels=c("Med","P10","P90")),
-                                            "_",
-                                            gl(5,27,labels=c("2016","2017","2018","2019","2016_2019"))),
-                  names(covP4)[160:216])
-
-saveRDS(names(covP4),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesCovP2016_2019.rds")
+names(covP4) <- c(paste0(c("ndvi","kndvi","evi",
+                           "savi","msavi","bsi",
+                           "str","brightness",
+                           "greenness","wetness") %>% rep(6) %>% as.factor(),
+                         gl(3,10,labels=c("Med","P10","P90")),
+                         "_",
+                         gl(2,30,labels=c("2018","2019"))),
+                  names(covP4)[61:79])
+saveRDS(names(covP4),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2018_2019.rds")
 Sys.time()-start
