@@ -207,9 +207,9 @@ print(Sys.time() - start)
 print(bor)
 names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-boruta.bank <- TentativeRoughFix(bor)
-print(boruta.bank)
-names(boruta.bank$finalDecision[boruta.bank$finalDecision %in% c("Confirmed")])
+bor <- TentativeRoughFix(bor)
+print(bor)
+names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
 # 7) Model fitting --------------------------------------------------------
 
@@ -349,21 +349,21 @@ xgb.goof
 
 # 7.6) Quantile random forest ---------------------------------------------
 
-set.seed(37)
+set.seed(1554)
 model_qrf <- quantregForest(y = train_data[,"SOC_1986t"],
                             x = train_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])],
                             data=train_data,
                             keep.inbag=TRUE,
                             mtry = as.numeric(model_rf$bestTune))
 model_qrf
-
+importance(model_qrf,type = 2)
 pred_qrf <- predict(model_qrf, newdata = test_data)
 
-qrf.goof <- gof(sim = pred_qrf[,2],obs = test_data$SOC_1986t)
+qrf.goof <- gof(sim = exp(pred_qrf[,2]),obs = exp(test_data$SOC_1986t))
 
 qrf.goof
 
-saveRDS(model_qrf,"ModelP1D1qrf_220722.rds")
+saveRDS(model_qrf,"ModelP1D1qrf_250722.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -399,26 +399,47 @@ ens.goof
 
 fm
 
-covP1 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
-           stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
+covP1 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
 names(covP1) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds"))
 
 names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")]) %in% names(covP1)
-
+fm
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
 
-Pred.pcs.layers1 <- predict(covP1[[c(41:50)]],pca1985Med)
-PCA_1985Med <- stack(Pred.pcs.layers1)
-PCA1_1985Med <- PCA_1985Med[[1]]
-plot(covP1$PCA1_1985Med)
-writeRaster(covP1$PCA1_1985Med,"PCA1_1985med.tif")
+Pred.pcs.layers1 <- predict(covP1[[c(41:50)]],pca1985Med,cores=15)
+Pred.pcs.layers2 <- predict(covP1[[c(61:70)]],pca1985P90,cores=15)
+Pred.pcs.layers3 <- predict(covP1[[c(91:100)]],pca1986P90,cores=15)
 
 
-PCA1_1985Med <- raster("PCA1_1985med.tif")
-covP1 <- stack(covP1,PCA1_1985Med)
+writeRaster(raster(Pred.pcs.layers1[[1]]),"PCA1_1985Med.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers2[[1]]),"PCA1_1985P90.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers3[[1]]),"PCA1_1986P90.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers3[[3]]),"PCA3_1986P90.tif",overwrite=T)
 
+# 8.1) Maps generation ----------------------------------------------------
+
+model_qrf <- readRDS("ModelP1D1qrf_250722.rds")
+print(model_qrf)
+
+covP1 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
+               stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986.tif"))
+names(covP1) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds"))
+
+
+
+#covP1 <- covP1[[-c(139:142)]]
+
+PCA1_1985Med <- raster("PCA1_1985Med.tif")
+PCA1_1985P90 <- raster("PCA1_1985P90.tif")
+PCA1_1986P90 <- raster("PCA1_1986P90.tif")
+PCA3_1986P90 <- raster("PCA3_1986P90.tif")
+
+covP1 <- stack(covP1,PCA1_1985Med,PCA1_1985P90,PCA1_1986P90,PCA3_1986P90)
+names(covP1)
 
 beginCluster(n=detectCores()-2,type='SOCK')
 
@@ -431,9 +452,12 @@ mean <- clusterR(covP1[[names(bor$finalDecision[bor$finalDecision %in% c("Confir
 mean <- exp(mean)
 
 
-plot(mean)
-plot(unc)
-writeRaster(mean,"ModelP1D1QrfMean_220722.tif")
-writeRaster(unc,"ModelP1D1QrfUnc_220722.tif")
+writeRaster(mean,"ModelP1D1QrfMean_250722.tif")
+writeRaster(unc,"ModelP1D1QrfUnc_250722.tif")
+
+writeRaster(covP1[[41:142]],"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1985_1986upd.tif",
+            overwrite=T)
+saveRDS(names(covP1)[41:142],"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds")
+
 
 endCluster()
