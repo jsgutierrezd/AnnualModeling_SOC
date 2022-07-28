@@ -47,9 +47,13 @@ names(covP3) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/Year
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
 covP4 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
-           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif"))
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/FieldBlock18.tif"),
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/FieldBlock19.tif"))
 names(covP4) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
-                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2018_2019.rds"))
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2018_2019.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock18.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock19.rds"))
 
 # 4) Data loading ---------------------------------------------------------
 

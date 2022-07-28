@@ -4,7 +4,7 @@
 
 rm(list = ls())
 Sys.setenv(language="EN")
-start <- Sys.time()
+# start <- Sys.time()
 
 # 1) Working directory ----------------------------------------------------
 
@@ -148,17 +148,17 @@ for (i in 1:length(paths)) {
 
 }
 
-# b) 1985 -----------------------------------------------------------------
+# a) 1985 -----------------------------------------------------------------
 ind1985med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
 ind1985p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
 ind1985p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
-# c) 1986 -----------------------------------------------------------------
+# b) 1986 -----------------------------------------------------------------
 ind1986med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
 ind1986p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
 ind1986p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
-# e) Period 1 layers (organisms) ------------------------------------------
+# c) Period 1 layers (organisms) ------------------------------------------
 
 organismsP1 <- c(ind1985med,ind1985p10,ind1985p90,
                  ind1986med,ind1986p10,ind1986p90)
@@ -177,17 +177,17 @@ for (i in 1:length(paths)) {
 
 }
 
-# c) 1996 -----------------------------------------------------------------
+# a) 1996 -----------------------------------------------------------------
 ind1996med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
 ind1996p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
 ind1996p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
-# d) 1997 -----------------------------------------------------------------
+# b) 1997 -----------------------------------------------------------------
 ind1997med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
 ind1997p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
 ind1997p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
-# f) Period 2 layers (organisms) ------------------------------------------
+# c) Period 2 layers (organisms) ------------------------------------------
 
 organismsP2 <- c(ind1996med,ind1996p10,ind1996p90,
                  ind1997med,ind1997p10,ind1997p90)
@@ -205,18 +205,17 @@ for (i in 1:length(paths)) {
 
 }
 
-# c) 2008 -----------------------------------------------------------------
+# a) 2008 -----------------------------------------------------------------
 ind2008med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
 ind2008p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
 ind2008p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
-# d) 2009 -----------------------------------------------------------------
+# b) 2009 -----------------------------------------------------------------
 ind2009med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
 ind2009p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
 ind2009p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
-
-# f) Period 3 layers (organisms) ------------------------------------------
+# c) Period 3 layers (organisms) ------------------------------------------
 
 organismsP3 <- c(ind2008med,ind2008p10,ind2008p90,
                  ind2009med,ind2009p10,ind2009p90)
@@ -235,21 +234,76 @@ for (i in 1:length(paths)) {
 
 }
 
-# c) 2018 -----------------------------------------------------------------
+# a) 2018 -----------------------------------------------------------------
 ind2018med <- app(all[[1]][[1:6]], fun=indicesL5, cores =15)
 ind2018p10 <- app(all[[1]][[7:12]], fun=indicesL5, cores =15)
 ind2018p90 <- app(all[[1]][[13:18]], fun=indicesL5, cores =15)
 
-# d) 2019 -----------------------------------------------------------------
+# b) 2019 -----------------------------------------------------------------
 ind2019med <- app(all[[2]][[1:6]], fun=indicesL5, cores =15)
 ind2019p10 <- app(all[[2]][[7:12]], fun=indicesL5, cores =15)
 ind2019p90 <- app(all[[2]][[13:18]], fun=indicesL5, cores =15)
 
 
-# f) Period 4 layers (organisms) ------------------------------------------
+# c) Land use information taken from field block map 2018 -------------------------
+
+crops <- rast("O:/Tech_AGRO/Jord/Sebastian/Fields_2011-2020/CropDataDK2011_2020/CropData2011_2020_30m.tif")
+names(crops)
+crops1819 <- crops[[c(8,9)]] %>% crop(coast,mask=T) %>% resample(all[[1]],method="near")
+
+requirements <- read.table(file = 'O:/Tech_AGRO/Jord/Sebastian/Fields_2011-2020/CropDataDK2011_2020/crop_drain_req.csv',
+                           sep = ';',
+                           header = TRUE
+)
+
+reclasser <- as.matrix(requirements[, c(1, 6)])
+
+# Check if the levels of each raster layer within the raster stack 
+# has a corresponding code in the reclassification table
+crops18<-ratify(raster(crops1819[[1]]))
+(catg <- levels(crops18)[[1]])
+
+catg$ID[catg$ID%nin%reclasser[,1]]
+
+
+crops19<-ratify(raster(crops1819[[2]]))
+(catg <- levels(crops19)[[1]])
+catg$ID[catg$ID%nin%reclasser[,1]]
+check <- data.frame(Kode=catg$ID,PermGrass_RotGrass=NA)
+
+# Updating reclassification table
+reclasser <- as.matrix(rbind(reclasser,check))
+
+
+beginCluster(detectCores()-2)
+crops_reclass <- clusterR(stack(crops18,crops19), reclassify,
+                        args = list(rcl = reclasser))
+
+endCluster()
+
+ref <- raster("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif")
+dummy18 <- layerize(crops_reclass[[1]])
+names(dummy18) <- c("PermGrass18","GrassRot18","Crops18","BareSoil18")
+dummy18 <- raster::resample(dummy18,ref,method="ngb")
+
+dummy19 <- layerize(crops_reclass[[2]])
+names(dummy19) <- c("PermGrass19","GrassRot19","Crops19")
+dummy19 <- raster::resample(dummy19,ref,method="ngb")
+
+writeRaster(dummy18,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/FieldBlock18.tif",
+            datatype='INT2U',overwrite=T)
+saveRDS(names(dummy18),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock18.rds")
+
+writeRaster(dummy19,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/FieldBlock19.tif",
+            datatype='INT2U',overwrite=T)
+saveRDS(names(dummy19),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock19.rds")
+
+
+# d) Period 4 layers (organisms) ------------------------------------------
 
 organismsP4 <- c(ind2018med,ind2018p10,ind2018p90,
-                 ind2019med,ind2019p10,ind2019p90)
+                 ind2019med,ind2019p10,ind2019p90,
+                 )
 
 
 # 5.2) Climate ------------------------------------------------------------
