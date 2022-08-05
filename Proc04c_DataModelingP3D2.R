@@ -1,5 +1,5 @@
 #============================================================================
-# Proc03b_DataModelingP2D1 ------------------------------------------------
+# Proc04c_DataModelingP3D2 ------------------------------------------------
 #============================================================================
 rm(list = ls())
 Sys.setenv(language="EN")
@@ -36,6 +36,7 @@ pckg <- c('caret',
           'quantregForest',
           'raster',
           'prospectr',
+          'MVN',
           'solitude'
 )
 
@@ -103,217 +104,205 @@ goof <- function(observed,predicted, plot.it = FALSE, type = "DSM"){
   return(gf)
 }
 
+
 # 3) Data loading ---------------------------------------------------------
 
-dataP2D1 <- read_delim("RegMat_P2D1.csv",
+dataP3D2 <- read_delim("RegMat_P3D2.csv",
                        delim = ",") %>% 
-  mutate(SOC_1997t = log(SOC_1997)) %>% na.omit
-summary(dataP2D1)
-# dataP2D1$bsiP10_1985 <- ifelse(dataP2D1$bsiP10_1985=="Inf"|dataP2D1$bsiP10_1985=="-Inf",NA,dataP2D1$bsiP10_1985)
-# dataP2D1$strP10_1985 <- ifelse(dataP2D1$strP10_1985=="Inf"|dataP2D1$strP10_1985=="-Inf",NA,dataP2D1$strP10_1985)
-# dataP2D1$strP10_1986 <- ifelse(dataP2D1$strP10_1986=="Inf"|dataP2D1$strP10_1986=="-Inf",NA,dataP2D1$strP10_1986)
-dataP2D1 <- dataP2D1 %>% na.omit
-summary(dataP2D1)
-names(dataP2D1)
+  mutate(SOC_2009t = log(SOC_2009)) %>% na.omit
+summary(dataP3D2)
+dataP3D2$strP10_2009 <- ifelse(dataP3D2$strP10_2009=="Inf"|dataP3D2$strP10_2009=="-Inf",NA,dataP3D2$strP10_2009)
+dataP3D2$strP10_2008 <- ifelse(dataP3D2$strP10_2008=="Inf"|dataP3D2$strP10_2008=="-Inf",NA,dataP3D2$strP10_2008)
+dataP3D2$ndviP10_2008 <- ifelse(dataP3D2$ndviP10_2008=="Inf"|dataP3D2$ndviP10_2008=="-Inf",NA,dataP3D2$ndviP10_2008)
+
+dataP3D2 <- dataP3D2 %>% na.omit
+summary(dataP3D2)
+names(dataP3D2)
+
 
 
 
 # 4) Correlation matrix ---------------------------------------------------
+
+# corMat <- cor(as.matrix(dataP3D2[,-c(6:23,121)])) %>% na.omit %>% as.data.frame
+# corMat <- dataP3D2[,-c(6:23,121:127)] %>% na.omit %>% cor %>% data.frame
 # 
-# corMat <- cor(as.matrix(dataP2D1[,-c(6:23)])) %>% na.omit %>% as.data.frame
-# corMat <- dataP2D1[,-c(6:23)] %>% na.omit %>% cor %>% data.frame
+# write_csv(corMat,"CorMatRegMat_P2D2.csv")
 # 
-# write_csv(corMat,"CorMatRegMat_P2D1.csv")
-# 
-# names(dataP2D1)
-# hist(log(dataP2D1$SOC_1997))
+# names(dataP3D2)
+# hist(log(dataP3D2$SOC_2009))
+
 
 # 5) Data splitting -------------------------------------------------------
 
-set.seed(1000)
-# inTrain <- createDataPartition(y = dataP2D1$SOC_1997t, p = .70, list = FALSE) # Random
-inTrain <- kenStone(dataP2D1, k = nrow(dataP2D1)*0.70, metric = "mahal") # Kennard Stone
-# data1 <- dataP2D1[,c("SOC_1997t")]
+set.seed(1510)
+inTrain <- createDataPartition(y = dataP3D2$SOC_2009t, p = .70, list = FALSE) # Random
+# inTrain <- kenStone(dataP3D2, k = nrow(dataP3D2)*0.70, metric = "mahal") # Kennard Stone
+# data1 <- dataP3D2[,c("SOC_2009t")]
 # set.seed(58)
 # indx <- clhs(data1, size = round(nrow(data1)*0.7),
 #              progress = T, iter = 1000,use.cpp = F,  simple = FALSE) # CLHS
 
-# train_data <- dataP2D1[ inTrain,] %>% data.frame #Random
-train_data <- dataP2D1[ inTrain$model,] %>% data.frame #Kennard Stone
-# train_data <- dataP2D1[indx$index_samples,] %>% data.frame  # CLHS
 
+train_data <- dataP3D2[ inTrain,] %>% data.frame #Random
+# train_data <- dataP3D2[ inTrain$model,] %>% data.frame #Kennard Stone
+# train_data <- dataP3D2[indx$index_samples,] %>% data.frame  # CLHS
 
 y_train <- train_data[,140]
 x_train <- train_data[,c(2:41,102:139)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
-x_train <- data.frame(SOC_1997t=y_train,x_train)
+x_train <- data.frame(SOC_2009t=y_train,x_train)
 
-# PCA on spectral indices ----------------------------------------------
+# 6) PCA on spectral indices ----------------------------------------------
 names(train_data)
-pca1996Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
-summary(pca1996Med)
-(corvar <- pca1996Med$rotation %*% diag(pca1996Med$sdev))
-Pred.pcs<-predict(pca1996Med,train_data[,c(42:51)])
-x_train$PCA1_1996Med=Pred.pcs[,1] 
-x_train$PCA2_1996Med=Pred.pcs[,2]
-x_train$PCA3_1996Med=Pred.pcs[,3] 
+pca2008Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
+summary(pca2008Med)
+(corvar <- pca2008Med$rotation %*% diag(pca2008Med$sdev))
+Pred.pcs<-predict(pca2008Med,train_data[,c(42:51)])
+x_train$PCA1_2008Med=Pred.pcs[,1] 
+x_train$PCA2_2008Med=Pred.pcs[,2]
+x_train$PCA3_2008Med=Pred.pcs[,3] 
 
-pca1996P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
-summary(pca1996P10)
-(corvar <- pca1996P10$rotation %*% diag(pca1996P10$sdev))
-Pred.pcs<-predict(pca1996P10,train_data[,c(52:61)])
-x_train$PCA1_1996P10=Pred.pcs[,1] 
-x_train$PCA2_1996P10=Pred.pcs[,2]
-x_train$PCA3_1996P10=Pred.pcs[,3]
+pca2008P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
+summary(pca2008P10)
+(corvar <- pca2008P10$rotation %*% diag(pca2008P10$sdev))
+Pred.pcs<-predict(pca2008P10,train_data[,c(52:61)])
+x_train$PCA1_2008P10=Pred.pcs[,1] 
+x_train$PCA2_2008P10=Pred.pcs[,2]
+x_train$PCA3_2008P10=Pred.pcs[,3]
 
-pca1996P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
-summary(pca1996P90)
-(corvar <- pca1996P90$rotation %*% diag(pca1996P90$sdev))
-Pred.pcs<-predict(pca1996P90,train_data[,c(62:71)])
-x_train$PCA1_1996P90=Pred.pcs[,1] 
-x_train$PCA2_1996P90=Pred.pcs[,2]
-x_train$PCA3_1996P90=Pred.pcs[,3]
+pca2008P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
+summary(pca2008P90)
+(corvar <- pca2008P90$rotation %*% diag(pca2008P90$sdev))
+Pred.pcs<-predict(pca2008P90,train_data[,c(62:71)])
+x_train$PCA1_2008P90=Pred.pcs[,1] 
+x_train$PCA2_2008P90=Pred.pcs[,2]
+x_train$PCA3_2008P90=Pred.pcs[,3]
 
-pca1997Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
-summary(pca1997Med)
-(corvar <- pca1997Med$rotation %*% diag(pca1997Med$sdev))
-Pred.pcs<-predict(pca1997Med,train_data[,c(72:81)])
-x_train$PCA1_1997Med=Pred.pcs[,1] 
-x_train$PCA2_1997Med=Pred.pcs[,2]
-x_train$PCA3_1997Med=Pred.pcs[,3]
+pca2009Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
+summary(pca2009Med)
+(corvar <- pca2009Med$rotation %*% diag(pca2009Med$sdev))
+Pred.pcs<-predict(pca2009Med,train_data[,c(72:81)])
+x_train$PCA1_2009Med=Pred.pcs[,1] 
+x_train$PCA2_2009Med=Pred.pcs[,2]
+x_train$PCA3_2009Med=Pred.pcs[,3]
 
-pca1997P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
-summary(pca1997P10)
-(corvar <- pca1997P10$rotation %*% diag(pca1997P10$sdev))
-Pred.pcs<-predict(pca1997P10,train_data[,c(82:91)])
-x_train$PCA1_1997P10=Pred.pcs[,1] 
-x_train$PCA2_1997P10=Pred.pcs[,2]
-x_train$PCA3_1997P10=Pred.pcs[,3]
+pca2009P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
+summary(pca2009P10)
+(corvar <- pca2009P10$rotation %*% diag(pca2009P10$sdev))
+Pred.pcs<-predict(pca2009P10,train_data[,c(82:91)])
+x_train$PCA1_2009P10=Pred.pcs[,1] 
+x_train$PCA2_2009P10=Pred.pcs[,2]
+x_train$PCA3_2009P10=Pred.pcs[,3]
 
-pca1997P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
-summary(pca1997P90)
-(corvar <- pca1997P90$rotation %*% diag(pca1997P90$sdev))
-Pred.pcs<-predict(pca1997P90,train_data[,c(92:101)])
-x_train$PCA1_1997P90=Pred.pcs[,1] 
-x_train$PCA2_1997P90=Pred.pcs[,2]
-x_train$PCA3_1997P90=Pred.pcs[,3]
+pca2009P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
+summary(pca2009P90)
+(corvar <- pca2009P90$rotation %*% diag(pca2009P90$sdev))
+Pred.pcs<-predict(pca2009P90,train_data[,c(92:101)])
+x_train$PCA1_2009P90=Pred.pcs[,1] 
+x_train$PCA2_2009P90=Pred.pcs[,2]
+x_train$PCA3_2009P90=Pred.pcs[,3]
 
 x_train
 
-# test_data <- dataP2D1[-inTrain,] #Random
-test_data <- dataP2D1[inTrain$test,] # Kennard Stone
-# test_data <- dataP2D1[-indx$index_samples,] # CLHS
+test_data <- dataP3D2[-inTrain,] #Random
+# test_data <- dataP3D2[inTrain$test,] # Kennard Stone
+# test_data <- dataP3D2[-indx$index_samples,] # CLHS
 
 y_test <- test_data[,140]
 x_test <- test_data[c(2:41,102:139)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
-x_test <- data.frame(SOC_1997t=y_test,x_test)
+x_test <- data.frame(SOC_2009t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca1996Med,test_data[,c(42:51)])
-x_test$PCA1_1996Med=Pred.pcs[,1] 
-x_test$PCA2_1996Med=Pred.pcs[,2]
-x_test$PCA3_1996Med=Pred.pcs[,3] 
+Pred.pcs<-predict(pca2008Med,test_data[,c(42:51)])
+x_test$PCA1_2008Med=Pred.pcs[,1] 
+x_test$PCA2_2008Med=Pred.pcs[,2]
+x_test$PCA3_2008Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca1996P10,test_data[,c(52:61)])
-x_test$PCA1_1996P10=Pred.pcs[,1] 
-x_test$PCA2_1996P10=Pred.pcs[,2]
-x_test$PCA3_1996P10=Pred.pcs[,3]
+Pred.pcs<-predict(pca2008P10,test_data[,c(52:61)])
+x_test$PCA1_2008P10=Pred.pcs[,1] 
+x_test$PCA2_2008P10=Pred.pcs[,2]
+x_test$PCA3_2008P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1996P90,test_data[,c(62:71)])
-x_test$PCA1_1996P90=Pred.pcs[,1] 
-x_test$PCA2_1996P90=Pred.pcs[,2]
-x_test$PCA3_1996P90=Pred.pcs[,3]
+Pred.pcs<-predict(pca2008P90,test_data[,c(62:71)])
+x_test$PCA1_2008P90=Pred.pcs[,1] 
+x_test$PCA2_2008P90=Pred.pcs[,2]
+x_test$PCA3_2008P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997Med,test_data[,c(72:81)])
-x_test$PCA1_1997Med=Pred.pcs[,1] 
-x_test$PCA2_1997Med=Pred.pcs[,2]
-x_test$PCA3_1997Med=Pred.pcs[,3]
+Pred.pcs<-predict(pca2009Med,test_data[,c(72:81)])
+x_test$PCA1_2009Med=Pred.pcs[,1] 
+x_test$PCA2_2009Med=Pred.pcs[,2]
+x_test$PCA3_2009Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997P10,test_data[,c(82:91)])
-x_test$PCA1_1997P10=Pred.pcs[,1] 
-x_test$PCA2_1997P10=Pred.pcs[,2]
-x_test$PCA3_1997P10=Pred.pcs[,3]
+Pred.pcs<-predict(pca2009P10,test_data[,c(82:91)])
+x_test$PCA1_2009P10=Pred.pcs[,1] 
+x_test$PCA2_2009P10=Pred.pcs[,2]
+x_test$PCA3_2009P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997P90,test_data[,c(92:101)])
-x_test$PCA1_1997P90=Pred.pcs[,1] 
-x_test$PCA2_1997P90=Pred.pcs[,2]
-x_test$PCA3_1997P90=Pred.pcs[,3]
+Pred.pcs<-predict(pca2009P90,test_data[,c(92:101)])
+x_test$PCA1_2009P90=Pred.pcs[,1] 
+x_test$PCA2_2009P90=Pred.pcs[,2]
+x_test$PCA3_2009P90=Pred.pcs[,3]
 
 x_train$geology_9 <- NULL
 x_train$geology_11 <- NULL
 
+
 x_test$geology_9 <- NULL
 x_test$geology_11 <- NULL
+train_data$bluespot <- NULL
+
 
 train_data <- x_train
 test_data <- x_test
+test_data$bluespot <- NULL
 
 summary(train_data)
 train_data <- train_data[complete.cases(train_data),]
 summary(test_data)
 test_data <- test_data[complete.cases(test_data),]
+train_data$bluespot <- NULL
 
-
+# train_data$label <- "Train"
+# test_data$label <- "Test"
+# df <- rbind(train_data,test_data)
+# 
+# ggplot(df, aes(x=SOC_2009t, color=label)) +
+#   geom_density()
+# 
+# train_data$label <- NULL
+# test_data$label <- NULL
 # Novelty detection -------------------------------------------------------
 
-# svm.model<-svm(train_data,y=NULL,
-#                type='one-classification',
-#                nu=0.2,
-#                scale=F,
-#                kernel="polynomial")
-# 
-# 
+svm.model<-svm(train_data,y=NULL,
+               type='one-classification',
+               nu=0.1,
+               scale=F,
+               kernel="radial")
+
+
 # svm.predtrain<-predict(svm.model,train_data)
 # table(svm.predtrain)
-# 
-# # svm.predtest<-predict(svm.model,test_data)
-# # table(svm.predtest)
-# 
-# 
-# test_data <- test_data[svm.predtest=="TRUE",]
-# library(solitude)
-# 
-# iso = isolationForest$new()
-# iso$fit(train_data)
-# 
-# library(h2o)
-# h2o.init()
-# train_data <- as.h2o(train_data)
-# test_data <- as.h2o(test_data)
-# model <- h2o.isolationForest(training_frame = train_data,
-#                              sample_rate = 0.1,
-#                              max_depth = 20,
-#                              ntrees = 50)
-# score <- h2o.predict(model, test_data)
-# result_pred <- score$predict
-# ln_pred <- h2o.predict_leaf_node_assignment(model, test_data)
-# score <- as.data.frame(result_pred)
-# res <- data.frame(Instance=as.character(paste0("I",1:68)),score=score)
-# res$label <- ifelse(res$predict>=0.5,"Outlier","Normal")
-# res
-# table(res$label)
-# 
-# 
-# test_data <- as.data.frame(test_data)
-# train_data <- as.data.frame(train_data)
-# 
-# test_data <- test_data[res$label=="Normal",]
 
+svm.predtest<-predict(svm.model,test_data)
+table(svm.predtest)
 
-
+# train_data <- train_data[svm.predtrain=="TRUE",]
+test_data <- test_data[svm.predtest=="TRUE",]
 
 # 6) Features selection ---------------------------------------------------
+
 
 # 6.1) Boruta algorithm ---------------------------------------------------
 names(train_data)
 train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
-  set.seed(1841)
-  (bor <- Boruta(x = train_data[,c(2:95)],
+  set.seed(927)
+  (bor <- Boruta(x = train_data[,c(2:94)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 
@@ -338,11 +327,11 @@ names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
 preds <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-saveRDS(preds,"Outputs/NamesPreds/P2D1/PredictorsP2D1_01082022.rds")
+# saveRDS(preds,"Outputs/NamesPreds/P2D2/PredictorsP2D2_01082022.rds")
 
 # 7) Model fitting --------------------------------------------------------
 
-fm <- as.formula(paste("SOC_1997t ~", paste0(preds,
+fm <- as.formula(paste("SOC_2009t ~", paste0(preds,
                                              collapse = "+")))
 fm
 
@@ -355,12 +344,13 @@ rctrlG <- trainControl(method = "repeatedcv",
                        search = "grid"
 )
 
-grid <- expand.grid(mtry = c(3,5,6,8),
+grid <- expand.grid(mtry = c(3,5,7,9,10),
                     splitrule = c("variance", "extratrees"),
-                    min.node.size = c(2,3,4,5)
+                    min.node.size = c(3,5,7)
 )
 
-set.seed(1629)
+set.seed(1520)
+
 model_rf <- train(fm,
                   data=train_data,
                   method = "ranger",
@@ -379,7 +369,7 @@ plot(mod_imp, top = 20)
 
 pred_rf <- predict(model_rf, newdata = test_data[,preds])
 
-(rf.goof <- goof(observed = exp(test_data$SOC_1997t), predicted = exp(pred_rf)))
+(rf.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_rf)))
 
 
 # 7.2) SVM ----------------------------------------------------------------
@@ -391,7 +381,9 @@ tuneResult <- tune(svm, fm, data = train_data,
 model_svm <- tuneResult$best.model
 print(model_svm)
 pred_svm <- predict(model_svm, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
-(svm.goof <- goof(observed = test_data$SOC_1997t, predicted = pred_svm))
+
+(svm.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_svm)))
+
 
 
 # 7.3) Multiple linear regression -----------------------------------------
@@ -403,9 +395,9 @@ model_lm_up <- stepAIC(model_lm,direction="both")
 
 summary(model_lm_up)
 
-pred_lm <- predict(model_lm_up, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
-(lm.goof <- goof(observed = test_data$SOC_1997t, predicted = pred_lm))
+pred_lm <- predict(model_lm, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
 
+(lm.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_lm)))
 
 
 
@@ -415,21 +407,21 @@ ctrl <- trainControl(method = "boot",
                      summaryFunction = defaultSummary,
                      selectionFunction = "best"
 )
-grid <- expand.grid(committees = c(1, 20, 50), 
-                    neighbors = c(1, 5, 9))
+
 set.seed(49)
 model_cubist <- train(fm,
                       data=train_data,
                       method = "cubist",
-                      tuneGrid = grid,
+                      # tuneGrid = grid,
                       trControl=ctrl
 )
 
 model_cubist
 summary(model_cubist)
 
-pred_cub <- predict(model_cubist, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
-(cub.goof <- goof(observed = exp(test_data$SOC_1997t), predicted = exp(pred_cub)))
+pred_cubist <- predict(model_cubist, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
+
+(cubist.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_cubist)))
 
 
 
@@ -467,25 +459,27 @@ xgb_model
 summary(xgb_model)
 
 pred_xgb <- predict(xgb_model, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
-(xgb.goof <- goof(observed = exp(test_data$SOC_1997t), predicted = exp(pred_xgb)))
+
+(xgb.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_xgb)))
 
 
 
 # 7.6) Quantile random forest ---------------------------------------------
 
-set.seed(1841)
-model_qrf <- quantregForest(y = train_data[,"SOC_1997t"],
+set.seed(1537)
+model_qrf <- quantregForest(y = train_data[,"SOC_2009t"],
                             x = train_data[,preds],
                             data=train_data,
                             keep.inbag=TRUE,
-                            mtry = as.numeric(model_rf$bestTune))
+                            mtry = model_rf$bestTune$mtry)
 model_qrf
 importance(model_qrf,type = 2)
-
 pred_qrf <- predict(model_qrf, newdata = test_data[,preds])
-(qrf.goof <- goof(observed = exp(test_data$SOC_1997t), predicted = exp(pred_qrf[,2])))
 
-saveRDS(model_qrf,"Outputs/Models/P2D1/ModelP2D1qrf_010822.rds")
+(qrf.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_qrf[,2])))
+
+
+# saveRDS(model_qrf,"Outputs/Models/P3D2/ModelP3D2qrf_010822.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -502,7 +496,7 @@ my_control <- trainControl(method = "repeatedcv",
 model_list <- caretList(
   fm, data=train_data,
   trControl=my_control,
-  methodList=c("xgbTree", "svmLinear")
+  methodList=c("ranger", "lm")
 )
 
 glm_ensemble <- caretStack(
@@ -510,10 +504,9 @@ glm_ensemble <- caretStack(
   method="glm",
   metric="RMSE")
 
-pred_ens <- predict(glm_ensemble, newdata=test_data)
-ens.goof <- gof(sim = pred_ens,obs = test_data$SOC_1986t)
+pred_ens <- predict(glm_ensemble, newdata = test_data[,preds])
 
-ens.goof
+(ens.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_ens)))
 
 
 
@@ -522,80 +515,83 @@ ens.goof
 fm
 
 covP2 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
-           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1996_1997.tif"))
+           rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2008_2009.tif"))
 names(covP2) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
-                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1996_1997.rds"))
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
 preds %in% names(covP2)
 fm
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
+names(covP2)
+Pred.pcs.layers1 <- predict(covP4[[c(41:50)]],pca2008Med,cores=15)
+Pred.pcs.layers2 <- predict(covP4[[c(61:70)]],pca2008P90,cores=15)
 
-Pred.pcs.layers1 <- predict(covP2[[c(41:50)]],pca1996Med,cores=15)
-# Pred.pcs.layers2 <- predict(covP2[[c(71:80)]],pca1997Med,cores=15)
-# Pred.pcs.layers3 <- predict(covP2[[c(91:100)]],pca1997P90,cores=15)
-#  
- 
-writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P2D1/PCA1_1996Med.tif",overwrite=T)
 
+
+writeRaster(raster(Pred.pcs.layers1[[3]]),"ExtraCovariates/P4D1/PCA3_2009Med.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers2[[1]]),"ExtraCovariates/P4D1/PCA1_2009P90.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers2[[2]]),"ExtraCovariates/P4D1/PCA2_2009P90.tif",overwrite=T)
 
 # 8.1) Maps generation ----------------------------------------------------
 
-model_qrf <- readRDS("Outputs/Models/P2D1/ModelP2D1qrf_010822.rds")
+model_qrf <- readRDS("Outputs/Models/ModelP3D1qrf_280722.rds")
 print(model_qrf)
 
-covP2 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
-           stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1996_1997.tif"))
-names(covP2) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
-                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1996_1997.rds"))
+covP4 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual2009_2009/YearbyYear/StatPreds.tif"),
+               stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual2009_2009/YearbyYear/DynPredsP2008_2009.tif"))
+names(covP4) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual2009_2009/YearbyYear/NamesStatPreds.rds"),
+                  readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual2009_2009/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
-fm
-PCA1_1996Med <- raster("ExtraCovariates/P2D1/PCA1_1996Med.tif")
 
-covP2 <- stack(covP2,PCA1_1996Med)
-names(covP2[[-25]])
+PCA3_2009Med <- raster("ExtraCovariates/P4D1/PCA3_2009Med.tif")
+PCA1_2009P90 <- raster("ExtraCovariates/P4D1/PCA1_2009P90.tif")
+PCA2_2009P90 <- raster("ExtraCovariates/P4D1/PCA2_2009P90.tif")
 
-covP2 <- covP2[[preds]]
+covP4 <- stack(covP4,PCA3_2009Med,PCA1_2009P90,PCA2_2009P90)
 
+covP4 <- covP4[[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])]]
+
+names(covP4)
 beginCluster(n=detectCores()-2,type='SOCK')
 
-covP2sc <- clusterR(covP2[[-25]], scale, 
-                    args=list(center = min_train[preds[-25]],
-                              scale = max_train[preds[-25]]-
-                                min_train[preds[-25]]))
+covP4sc <- clusterR(covP4[[-c(22:24)]], scale, 
+                    args=list(center = min_train[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])][-c(22:24)],
+                              scale = max_train[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])][-c(22:24)]-
+                                min_train[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])][-c(22:24)]))
 
-covP2sc <- stack(covP2sc,PCA1_1996Med)
-names(covP2sc) <- preds
+covP4sc <- stack(covP4sc,PCA3_2009Med,PCA1_2009P90,PCA2_2009P90)
+names(covP4sc) <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-median <- clusterR(covP2sc, predict,
+median <- clusterR(covP4sc, predict,
                    args=list(model=model_qrf, what=0.5))
 median <- exp(median)
 
 
-UppL <- clusterR(covP2sc, predict,
+UppL <- clusterR(covP4sc, predict,
                  args=list(model=model_qrf, what=0.95))
 UppL <- exp(UppL)
 
 
-LowL <- clusterR(covP2sc, predict,
+LowL <- clusterR(covP4sc, predict,
                  args=list(model=model_qrf, what=0.05))
 LowL <- exp(LowL)
 
 
-mean <- clusterR(covP2sc, predict,
+mean <- clusterR(covP4sc, predict,
                  args=list(model=model_qrf, what=mean))
 mean <- exp(mean)
 
-sd <- clusterR(covP2sc, predict,
-               args=list(model=model_qrf, what=sd))
-sd <- exp(sd)
 
-writeRaster(median,"Outputs/Layers/P2D1/ModelP2D1QrfMedian_010822.tif",overwrite=T)
-writeRaster(UppL,"Outputs/Layers/P2D1/ModelP2D1QrfUppL_010822.tif",overwrite=T)
-writeRaster(LowL,"Outputs/Layers/P2D1/ModelP2D1QrfLowL_010822.tif",overwrite=T)
-writeRaster(mean,"Outputs/Layers/P2D1/ModelP2D1QrfMean_010822.tif",overwrite=T)
-writeRaster(sd,"Outputs/Layers/P2D1/ModelP2D1QrfSd_010822.tif",overwrite=T)
+
+# #quantile probs=0.5
+# plot(median)
+# plot(UppL)
+# plot(LowL)
+
+writeRaster(median,"Outputs/Layers/P4D1/ModelP4D1QrfMedian_290722.tif",overwrite=T)
+writeRaster(UppL,"Outputs/Layers/P4D1/ModelP4D1QrfUppL_290722.tif",overwrite=T)
+writeRaster(LowL,"Outputs/Layers/P4D1/ModelP4D1QrfLowL_290722.tif",overwrite=T)
+writeRaster(mean,"Outputs/Layers/P4D1/ModelP4D1QrfMean_290722.tif",overwrite=T)
 
 endCluster()
-
-

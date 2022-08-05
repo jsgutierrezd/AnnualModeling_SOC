@@ -119,20 +119,29 @@ names(dataP3D1)
 
 # 4) Correlation matrix ---------------------------------------------------
 
-corMat <- cor(as.matrix(dataP3D1[,-c(6:23)])) %>% na.omit %>% as.data.frame
-corMat <- dataP3D1[,-c(6:23)] %>% na.omit %>% cor %>% data.frame
-
-write_csv(corMat,"CorMatRegMat_P3D1.csv")
-
-names(dataP3D1)
-hist(log(dataP3D1$SOC_2009))
+# corMat <- cor(as.matrix(dataP3D1[,-c(6:23)])) %>% na.omit %>% as.data.frame
+# corMat <- dataP3D1[,-c(6:23)] %>% na.omit %>% cor %>% data.frame
+# 
+# write_csv(corMat,"CorMatRegMat_P3D1.csv")
+# 
+# names(dataP3D1)
+# hist(log(dataP3D1$SOC_2009))
 
 # 5) Data splitting -------------------------------------------------------
 
 set.seed(1638)
-inTrain <- createDataPartition(y = dataP3D1$SOC_2009t, p = .70, list = FALSE)
+inTrain <- createDataPartition(y = dataP3D1$SOC_2009t, p = .70, list = FALSE) # Random
+# inTrain <- kenStone(dataP3D1, k = nrow(dataP3D1)*0.70, metric = "mahal") # Kennard Stone
+# data1 <- dataP3D1[,c("SOC_1997t")]
+# set.seed(58)
+# indx <- clhs(data1, size = round(nrow(data1)*0.7),
+#              progress = T, iter = 1000,use.cpp = F,  simple = FALSE) # CLHS
 
-train_data <- dataP3D1[ inTrain,] %>% data.frame
+
+train_data <- dataP3D1[ inTrain,] %>% data.frame #Random
+# train_data <- dataP3D1[ inTrain$model,] %>% data.frame #Kennard Stone
+# train_data <- dataP3D1[indx$index_samples,] %>% data.frame  # CLHS
+
 y_train <- train_data[,140]
 x_train <- train_data[,c(2:41,102:139)]
 max_train <- apply(x_train, 2, max)
@@ -191,8 +200,10 @@ x_train$PCA3_2009P90=Pred.pcs[,3]
 
 x_train
 
+test_data <- dataP3D1[-inTrain,] #Random
+# test_data <- dataP3D1[inTrain$test,] # Kennard Stone
+# test_data <- dataP3D1[-indx$index_samples,] # CLHS
 
-test_data <- dataP3D1[-inTrain,]
 y_test <- test_data[,140]
 x_test <- test_data[c(2:41,102:139)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
@@ -244,31 +255,13 @@ summary(test_data)
 test_data <- test_data[complete.cases(test_data),]
 # 6) Features selection ---------------------------------------------------
 
-
-# 6.1) Recursive feature elimination --------------------------------------
-
-# names(train_data)
-# train_data <- train_data %>% na.omit %>% data.frame
-# {
-#   set.seed(2023)
-#   start <- Sys.time()
-#   cl <- parallel::makeCluster(detectCores(), type='PSOCK')
-#   registerDoParallel(cl)
-#   control2 <- rfeControl(functions=rfFuncs, method="repeatedcv", number=10, repeats=10,allowParallel = TRUE)
-#   (rfe <- rfe(x=train_data[,c(2:41,102:139,141:158)], y=train_data[,140], sizes=c(1:150), rfeControl=control2))
-#   print(Sys.time() - start)
-# }
-# 
-# #names(train_data[,c(2:25,150:187,189:206)])
-# plot(rfe, type=c("g", "o"))
-# predictors(rfe)
-
 # 6.2) Boruta algorithm ---------------------------------------------------
 names(train_data)
 train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
-  (bor <- Boruta(x = train_data[,c(2:39,59:77,87:95)],
+  set.seed(1901)
+  (bor <- Boruta(x = train_data[,c(2:95)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 
@@ -291,27 +284,31 @@ bor <- TentativeRoughFix(bor)
 print(bor)
 names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
+preds <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
+
+saveRDS(preds,"Outputs/NamesPreds/P3D1/PredictorsP3D1_01082022.rds")
+
 # 7) Model fitting --------------------------------------------------------
 
-fm <- as.formula(paste("SOC_2009t ~", paste0(names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")]),
+fm <- as.formula(paste("SOC_2009t ~", paste0(preds,
                                              collapse = "+")))
 fm
 
 # 7.1) Randon forest - Ranger ---------------------------------------------
 
 rctrlG <- trainControl(method = "repeatedcv",
-                       number = 10,
-                       repeats = 10,
+                       number = 20,
+                       repeats = 20,
                        returnResamp = "all",
                        search = "grid"
                        )
 
-grid <- expand.grid(mtry = c(3,4,5,6),
+grid <- expand.grid(mtry = c(5,7,8,10),
                     splitrule = c("variance", "extratrees"),
-                    min.node.size = c(1,2,4)
+                    min.node.size = c(3,4,8)
 )
 
-set.seed(16)
+set.seed(1650)
 
 model_rf <- train(fm,
                   data=train_data,
@@ -329,9 +326,9 @@ mod_imp <- varImp(model_rf)
 plot(mod_imp, top = 20)
 
 
-pred_rf <- predict(model_rf, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
+pred_rf <- predict(model_rf, newdata = test_data[,preds])
 
-(rf.goof <- goof(observed = test_data$SOC_2009t, predicted = pred_rf))
+(rf.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_rf)))
 
 
 # 7.2) SVM ----------------------------------------------------------------
@@ -428,20 +425,20 @@ pred_xgb <- predict(xgb_model, newdata = test_data[,names(bor$finalDecision[bor$
 
 # 7.6) Quantile random forest ---------------------------------------------
 
-set.seed(17)
+set.seed(1702)
 model_qrf <- quantregForest(y = train_data[,"SOC_2009t"],
-                            x = train_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])],
+                            x = train_data[,preds],
                             data=train_data,
                             keep.inbag=TRUE,
                             mtry = model_rf$bestTune$mtry)
 model_qrf
 importance(model_qrf,type = 2)
-pred_qrf <- predict(model_qrf, newdata = test_data[,names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])])
+pred_qrf <- predict(model_qrf, newdata = test_data[,preds])
 
-(qrf.goof <- goof(observed = test_data$SOC_2009t, predicted = pred_qrf[,2]))
+(qrf.goof <- goof(observed = exp(test_data$SOC_2009t), predicted = exp(pred_qrf[,2])))
 
 
-saveRDS(model_qrf,"Outputs/Models/ModelP3D1qrf_260722.rds")
+saveRDS(model_qrf,"Outputs/Models/P3D1/ModelP3D1qrf_010822.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -482,7 +479,7 @@ covP3 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/Sta
 names(covP3) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
-names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")]) %in% names(covP3)
+preds %in% names(covP3)
 fm
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
@@ -494,7 +491,7 @@ writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P3D1/PCA1_2009P90.tif
 
 # 8.1) Maps generation ----------------------------------------------------
 
-model_qrf <- readRDS("Outputs/Models/ModelP3D1qrf_260722.rds")
+model_qrf <- readRDS("Outputs/Models/P3D1/ModelP3D1qrf_010822.rds")
 print(model_qrf)
 
 covP3 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
@@ -502,33 +499,52 @@ covP3 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYea
 names(covP3) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
+
 PCA1_2009P90 <- raster("ExtraCovariates/P3D1/PCA1_2009P90.tif")
 
-fm
-max_train <- apply(x_train, 2, max)
-min_train <- apply(x_train, 2, min)
-
 covP3 <- stack(covP3,PCA1_2009P90)
+fm
+names(covP3[[-33]])
 
-cov3a <- covP3[[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])]]
-
-cov3a <- (cov3a-min_train)/(max_train-min_train)
-names(covP3)
+covP3 <- covP3[[preds]]
 
 beginCluster(n=detectCores()-2,type='SOCK')
 
-unc <- clusterR(cov3a[[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])]], predict, 
-                args=list(model=model_qrf,what=sd))
-unc <- exp(unc)
+covP3sc <- clusterR(covP3[[-33]], scale, 
+                    args=list(center = min_train[preds[-33]],
+                              scale = max_train[preds[-33]]-
+                                min_train[preds[-33]]))
 
-mean <- clusterR(cov3a[[names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])]], predict,
+covP3sc <- stack(covP3sc,PCA1_2009P90)
+names(covP3sc) <- preds
+
+median <- clusterR(covP3sc, predict,
+                   args=list(model=model_qrf, what=0.5))
+median <- exp(median)
+
+
+UppL <- clusterR(covP3sc, predict,
+                 args=list(model=model_qrf, what=0.95))
+UppL <- exp(UppL)
+
+
+LowL <- clusterR(covP3sc, predict,
+                 args=list(model=model_qrf, what=0.05))
+LowL <- exp(LowL)
+
+
+mean <- clusterR(covP3sc, predict,
                  args=list(model=model_qrf, what=mean))
 mean <- exp(mean)
 
+sd <- clusterR(covP3sc, predict,
+               args=list(model=model_qrf, what=sd))
+sd <- exp(sd)
 
-plot(mean)
-plot(unc)
-writeRaster(mean,"Outputs/Layers/ModelP3D1QrfMean_260722.tif",overwrite=T)
-writeRaster(unc,"Outputs/Layers/ModelP3D1QrfUnc_260722.tif",overwrite=T)
+writeRaster(median,"Outputs/Layers/P3D1/ModelP3D1QrfMedian_010822.tif",overwrite=T)
+writeRaster(UppL,"Outputs/Layers/P3D1/ModelP3D1QrfUppL_010822.tif",overwrite=T)
+writeRaster(LowL,"Outputs/Layers/P3D1/ModelP3D1QrfLowL_010822.tif",overwrite=T)
+writeRaster(mean,"Outputs/Layers/P3D1/ModelP3D1QrfMean_010822.tif",overwrite=T)
+writeRaster(sd,"Outputs/Layers/P3D1/ModelP3D1QrfSd_010822.tif",overwrite=T)
 
 endCluster()

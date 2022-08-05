@@ -87,13 +87,39 @@ all <- lapply(all,function(x){
 soil <- rast(all) %>% crop(coast,mask=T)
 
 
+# 3.4) Coordinates --------------------------------------------------------
+
+cov <- rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif")
+names(cov) <- readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds")
+
+coord <- as.data.frame(soil[[1]], xy=TRUE)
+x <- data.frame(coord$x,coord$y,coord$x) 
+x <- rast(x, type="xyz")
+crs(x)  <- "epsg:25832"
+x <- x %>% crop(coast,mask=T) %>% resample(soil[[1]])
+names(x) <- "CoordX"
+x2 <- x^2
+names(x2) <- "CoordX2"
+x3 <- x^3
+names(x3) <- "CoordX3"
+
+y <- data.frame(coord$x,coord$y,coord$y)
+y <- rast(y, type="xyz")   
+crs(y)  <- "epsg:25832"
+y <- y %>% crop(coast,mask=T) %>% resample(soil[[1]])
+names(y) <- "CoordY"
+y2 <- y^2
+names(y2) <- "CoordY2"
+y3 <- y^3
+names(y3) <- "CoordY3"
+
 
 # 4) Static predictors raster stack ---------------------------------------
-StatPreds <- c(soil,dummygeo1,dummygeo2,geomorphology)
+StatPreds <- c(x,x2,x3,y,y2,y3,soil,dummygeo1,dummygeo2,geomorphology)
 names(StatPreds)
 
 terra::writeRaster(StatPreds,
-                   "O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif",
+                   "O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds05082022.tif",
                    datatype="FLT2S",
                    overwrite=T)
 
