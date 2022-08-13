@@ -34,7 +34,8 @@ pckg <- c('caret',
           'Hmisc',
           'snow',
           'quantregForest',
-          'raster'
+          'raster',
+          'prospectr'
 )
 
 usePackage <- function(p) {
@@ -110,6 +111,8 @@ dataP4D1 <- read_delim("RegMat_P4D1.csv",
 summary(dataP4D1)
 dataP4D1$strP10_2018 <- ifelse(dataP4D1$strP10_2018=="Inf"|dataP4D1$strP10_2018=="-Inf",NA,dataP4D1$strP10_2018)
 dataP4D1$strP10_2019 <- ifelse(dataP4D1$strP10_2019=="Inf"|dataP4D1$strP10_2019=="-Inf",NA,dataP4D1$strP10_2019)
+dataP4D1$geology_9 <- NULL
+dataP4D1$geology_11 <- NULL
 dataP4D1 <- dataP4D1 %>% na.omit
 summary(dataP4D1)
 names(dataP4D1)
@@ -140,9 +143,9 @@ inTrain <- kenStone(dataP4D1, k = nrow(dataP4D1)*0.70, metric = "mahal") # Kenna
 # train_data <- dataP4D1[ inTrain,] %>% data.frame #Random
 train_data <- dataP4D1[ inTrain$model,] %>% data.frame #Kennard Stone
 # train_data <- dataP4D1[indx$index_samples,] %>% data.frame  # CLHS
-
-y_train <- train_data[,128]
-x_train <- train_data[,c(2:41,102:127)]
+names(train_data)
+y_train <- train_data[,131]
+x_train <- train_data[,c(2:45,106:130)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
@@ -150,50 +153,50 @@ x_train <- data.frame(SOC_2019t=y_train,x_train)
 
 # 6) PCA on spectral indices ----------------------------------------------
 names(train_data)
-pca2018Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
+pca2018Med<-prcomp(train_data[,c(46:55)], scale=TRUE) 
 summary(pca2018Med)
 (corvar <- pca2018Med$rotation %*% diag(pca2018Med$sdev))
-Pred.pcs<-predict(pca2018Med,train_data[,c(42:51)])
+Pred.pcs<-predict(pca2018Med,train_data[,c(46:55)])
 x_train$PCA1_2018Med=Pred.pcs[,1] 
 x_train$PCA2_2018Med=Pred.pcs[,2]
 x_train$PCA3_2018Med=Pred.pcs[,3] 
 
-pca2018P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
+pca2018P10<-prcomp(train_data[,c(56:65)], scale=TRUE) 
 summary(pca2018P10)
 (corvar <- pca2018P10$rotation %*% diag(pca2018P10$sdev))
-Pred.pcs<-predict(pca2018P10,train_data[,c(52:61)])
+Pred.pcs<-predict(pca2018P10,train_data[,c(56:65)])
 x_train$PCA1_2018P10=Pred.pcs[,1] 
 x_train$PCA2_2018P10=Pred.pcs[,2]
 x_train$PCA3_2018P10=Pred.pcs[,3]
 
-pca2018P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
+pca2018P90<-prcomp(train_data[,c(66:75)], scale=TRUE) 
 summary(pca2018P90)
 (corvar <- pca2018P90$rotation %*% diag(pca2018P90$sdev))
-Pred.pcs<-predict(pca2018P90,train_data[,c(62:71)])
+Pred.pcs<-predict(pca2018P90,train_data[,c(66:75)])
 x_train$PCA1_2018P90=Pred.pcs[,1] 
 x_train$PCA2_2018P90=Pred.pcs[,2]
 x_train$PCA3_2018P90=Pred.pcs[,3]
 
-pca2019Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
+pca2019Med<-prcomp(train_data[,c(76:85)], scale=TRUE) 
 summary(pca2019Med)
 (corvar <- pca2019Med$rotation %*% diag(pca2019Med$sdev))
-Pred.pcs<-predict(pca2019Med,train_data[,c(72:81)])
+Pred.pcs<-predict(pca2019Med,train_data[,c(76:85)])
 x_train$PCA1_2019Med=Pred.pcs[,1] 
 x_train$PCA2_2019Med=Pred.pcs[,2]
 x_train$PCA3_2019Med=Pred.pcs[,3]
 
-pca2019P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
+pca2019P10<-prcomp(train_data[,c(86:95)], scale=TRUE) 
 summary(pca2019P10)
 (corvar <- pca2019P10$rotation %*% diag(pca2019P10$sdev))
-Pred.pcs<-predict(pca2019P10,train_data[,c(82:91)])
+Pred.pcs<-predict(pca2019P10,train_data[,c(86:95)])
 x_train$PCA1_2019P10=Pred.pcs[,1] 
 x_train$PCA2_2019P10=Pred.pcs[,2]
 x_train$PCA3_2019P10=Pred.pcs[,3]
 
-pca2019P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
+pca2019P90<-prcomp(train_data[,c(96:105)], scale=TRUE) 
 summary(pca2019P90)
 (corvar <- pca2019P90$rotation %*% diag(pca2019P90$sdev))
-Pred.pcs<-predict(pca2019P90,train_data[,c(92:101)])
+Pred.pcs<-predict(pca2019P90,train_data[,c(96:105)])
 x_train$PCA1_2019P90=Pred.pcs[,1] 
 x_train$PCA2_2019P90=Pred.pcs[,2]
 x_train$PCA3_2019P90=Pred.pcs[,3]
@@ -205,49 +208,41 @@ x_train
 test_data <- dataP4D1[inTrain$test,] # Kennard Stone
 # test_data <- dataP4D1[-indx$index_samples,] # CLHS
 
-y_test <- test_data[,128]
-x_test <- test_data[c(2:41,102:127)]
+y_test <- test_data[,131]
+x_test <- test_data[c(2:45,106:130)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
 x_test <- data.frame(SOC_2019t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca2018Med,test_data[,c(42:51)])
+Pred.pcs<-predict(pca2018Med,test_data[,c(46:55)])
 x_test$PCA1_2018Med=Pred.pcs[,1] 
 x_test$PCA2_2018Med=Pred.pcs[,2]
 x_test$PCA3_2018Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca2018P10,test_data[,c(52:61)])
+Pred.pcs<-predict(pca2018P10,test_data[,c(56:65)])
 x_test$PCA1_2018P10=Pred.pcs[,1] 
 x_test$PCA2_2018P10=Pred.pcs[,2]
 x_test$PCA3_2018P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2018P90,test_data[,c(62:71)])
+Pred.pcs<-predict(pca2018P90,test_data[,c(66:75)])
 x_test$PCA1_2018P90=Pred.pcs[,1] 
 x_test$PCA2_2018P90=Pred.pcs[,2]
 x_test$PCA3_2018P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2019Med,test_data[,c(72:81)])
+Pred.pcs<-predict(pca2019Med,test_data[,c(76:85)])
 x_test$PCA1_2019Med=Pred.pcs[,1] 
 x_test$PCA2_2019Med=Pred.pcs[,2]
 x_test$PCA3_2019Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2019P10,test_data[,c(82:91)])
+Pred.pcs<-predict(pca2019P10,test_data[,c(86:95)])
 x_test$PCA1_2019P10=Pred.pcs[,1] 
 x_test$PCA2_2019P10=Pred.pcs[,2]
 x_test$PCA3_2019P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2019P90,test_data[,c(92:101)])
+Pred.pcs<-predict(pca2019P90,test_data[,c(96:105)])
 x_test$PCA1_2019P90=Pred.pcs[,1] 
 x_test$PCA2_2019P90=Pred.pcs[,2]
 x_test$PCA3_2019P90=Pred.pcs[,3]
-
-x_train$geology_9 <- NULL
-x_train$geology_11 <- NULL
-x_train$BareSoil18 <- NULL
-
-x_test$geology_9 <- NULL
-x_test$geology_11 <- NULL
-x_test$BareSoil18 <- NULL
 
 train_data <- x_train
 test_data <- x_test
@@ -265,7 +260,7 @@ train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
   set.seed(1910)
-  (bor <- Boruta(x = train_data[,c(2:82)],
+  (bor <- Boruta(x = train_data[,c(2:88)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 
@@ -290,7 +285,7 @@ names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
 preds <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-saveRDS(preds,"Outputs/NamesPreds/P4D1/PredictorsP4D1_01082022.rds")
+# saveRDS(preds,"Outputs/NamesPreds/P4D1/PredictorsP4D1_01082022.rds")
 
 # 7) Model fitting --------------------------------------------------------
 
@@ -438,7 +433,7 @@ pred_qrf <- predict(model_qrf, newdata = test_data[,preds])
 (qrf.goof <- goof(observed = exp(test_data$SOC_2019t), predicted = exp(pred_qrf[,2])))
 
 
-saveRDS(model_qrf,"Outputs/Models/P4D1/ModelP4D1qrf_010822.rds")
+# saveRDS(model_qrf,"Outputs/Models/P4D1/ModelP4D1qrf_010822.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -471,8 +466,10 @@ ens.goof
 
 
 # 8) Spatial prediction ---------------------------------------------------
-
-fm
+preds <- readRDS("Outputs/NamesPreds/P4D1/PredictorsP4D1_01082022.rds")
+model_qrf <- readRDS("Outputs/Models/P4D1/ModelP4D1qrf_010822.rds")
+model_qrf$importance
+rownames(model_qrf$importance) %in% preds
 
 covP4 <- c(rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
            rast("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif"),
@@ -484,13 +481,13 @@ names(covP4) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/Year
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock19.rds"))
 
 preds %in% names(covP4)
-fm
+preds
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
 names(covP4)
-Pred.pcs.layers1 <- predict(covP4[[c(71:80)]],pca2019Med,cores=15)
-Pred.pcs.layers2 <- predict(covP4[[c(91:100)]],pca2019P90,cores=15)
-Pred.pcs.layers3 <- predict(covP4[[c(91:100)]],pca2019P90,cores=15)
+Pred.pcs.layers1 <- predict(covP4[[c(77:86)]],pca2019Med,cores=15)
+Pred.pcs.layers2 <- predict(covP4[[c(97:106)]],pca2019P90,cores=15)
+Pred.pcs.layers3 <- predict(covP4[[c(97:106)]],pca2019P90,cores=15)
 
 
 writeRaster(raster(Pred.pcs.layers1[[3]]),"ExtraCovariates/P4D1/PCA3_2019Med.tif",overwrite=T)

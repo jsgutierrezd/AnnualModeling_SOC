@@ -107,11 +107,14 @@ goof <- function(observed,predicted, plot.it = FALSE, type = "DSM"){
 
 dataP2D1 <- read_delim("RegMat_P2D1.csv",
                        delim = ",") %>% 
-  mutate(SOC_1997t = log(SOC_1997)) %>% na.omit
+  mutate(SOC_1997t = log(SOC_1997)) %>% na.omit %>% data.frame
 summary(dataP2D1)
 # dataP2D1$bsiP10_1985 <- ifelse(dataP2D1$bsiP10_1985=="Inf"|dataP2D1$bsiP10_1985=="-Inf",NA,dataP2D1$bsiP10_1985)
 # dataP2D1$strP10_1985 <- ifelse(dataP2D1$strP10_1985=="Inf"|dataP2D1$strP10_1985=="-Inf",NA,dataP2D1$strP10_1985)
 # dataP2D1$strP10_1986 <- ifelse(dataP2D1$strP10_1986=="Inf"|dataP2D1$strP10_1986=="-Inf",NA,dataP2D1$strP10_1986)
+dataP2D1$geology_9 <- NULL
+dataP2D1$geology_3 <- NULL
+dataP2D1$geology_11 <- NULL
 dataP2D1 <- dataP2D1 %>% na.omit
 summary(dataP2D1)
 names(dataP2D1)
@@ -131,122 +134,126 @@ names(dataP2D1)
 # 5) Data splitting -------------------------------------------------------
 
 set.seed(1000)
-# inTrain <- createDataPartition(y = dataP2D1$SOC_1997t, p = .70, list = FALSE) # Random
-inTrain <- kenStone(dataP2D1, k = nrow(dataP2D1)*0.70, metric = "mahal") # Kennard Stone
+inTrain <- createDataPartition(y = dataP2D1$SOC_1997t, p = .70, list = FALSE) # Random
+# inTrain <- kenStone(dataP2D1, k = nrow(dataP2D1)*0.70, metric = "mahal") # Kennard Stone
 # data1 <- dataP2D1[,c("SOC_1997t")]
 # set.seed(58)
 # indx <- clhs(data1, size = round(nrow(data1)*0.7),
 #              progress = T, iter = 1000,use.cpp = F,  simple = FALSE) # CLHS
 
-# train_data <- dataP2D1[ inTrain,] %>% data.frame #Random
-train_data <- dataP2D1[ inTrain$model,] %>% data.frame #Kennard Stone
+train_data <- dataP2D1[ inTrain,] %>% data.frame #Random
+# train_data <- dataP2D1[ inTrain$model,] %>% data.frame #Kennard Stone
 # train_data <- dataP2D1[indx$index_samples,] %>% data.frame  # CLHS
 
+names(train_data)
+y_train <- train_data[,143]
+x_train <- train_data[,c(2:44,105:142)]
 
-y_train <- train_data[,140]
-x_train <- train_data[,c(2:41,102:139)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
 x_train <- data.frame(SOC_1997t=y_train,x_train)
 
+summary(x_train)
 # PCA on spectral indices ----------------------------------------------
 names(train_data)
-pca1996Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
+pca1996Med<-prcomp(train_data[,c(45:54)], scale=TRUE) 
 summary(pca1996Med)
 (corvar <- pca1996Med$rotation %*% diag(pca1996Med$sdev))
-Pred.pcs<-predict(pca1996Med,train_data[,c(42:51)])
+Pred.pcs<-predict(pca1996Med,train_data[,c(45:54)])
 x_train$PCA1_1996Med=Pred.pcs[,1] 
 x_train$PCA2_1996Med=Pred.pcs[,2]
 x_train$PCA3_1996Med=Pred.pcs[,3] 
 
-pca1996P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
+pca1996P10<-prcomp(train_data[,c(55:64)], scale=TRUE) 
 summary(pca1996P10)
 (corvar <- pca1996P10$rotation %*% diag(pca1996P10$sdev))
-Pred.pcs<-predict(pca1996P10,train_data[,c(52:61)])
+Pred.pcs<-predict(pca1996P10,train_data[,c(55:64)])
 x_train$PCA1_1996P10=Pred.pcs[,1] 
 x_train$PCA2_1996P10=Pred.pcs[,2]
 x_train$PCA3_1996P10=Pred.pcs[,3]
 
-pca1996P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
+pca1996P90<-prcomp(train_data[,c(65:74)], scale=TRUE) 
 summary(pca1996P90)
 (corvar <- pca1996P90$rotation %*% diag(pca1996P90$sdev))
-Pred.pcs<-predict(pca1996P90,train_data[,c(62:71)])
+Pred.pcs<-predict(pca1996P90,train_data[,c(65:74)])
 x_train$PCA1_1996P90=Pred.pcs[,1] 
 x_train$PCA2_1996P90=Pred.pcs[,2]
 x_train$PCA3_1996P90=Pred.pcs[,3]
 
-pca1997Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
+pca1997Med<-prcomp(train_data[,c(75:84)], scale=TRUE) 
 summary(pca1997Med)
 (corvar <- pca1997Med$rotation %*% diag(pca1997Med$sdev))
-Pred.pcs<-predict(pca1997Med,train_data[,c(72:81)])
+Pred.pcs<-predict(pca1997Med,train_data[,c(75:84)])
 x_train$PCA1_1997Med=Pred.pcs[,1] 
 x_train$PCA2_1997Med=Pred.pcs[,2]
 x_train$PCA3_1997Med=Pred.pcs[,3]
 
-pca1997P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
+pca1997P10<-prcomp(train_data[,c(85:94)], scale=TRUE) 
 summary(pca1997P10)
 (corvar <- pca1997P10$rotation %*% diag(pca1997P10$sdev))
-Pred.pcs<-predict(pca1997P10,train_data[,c(82:91)])
+Pred.pcs<-predict(pca1997P10,train_data[,c(85:94)])
 x_train$PCA1_1997P10=Pred.pcs[,1] 
 x_train$PCA2_1997P10=Pred.pcs[,2]
 x_train$PCA3_1997P10=Pred.pcs[,3]
 
-pca1997P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
+pca1997P90<-prcomp(train_data[,c(95:104)], scale=TRUE) 
 summary(pca1997P90)
 (corvar <- pca1997P90$rotation %*% diag(pca1997P90$sdev))
-Pred.pcs<-predict(pca1997P90,train_data[,c(92:101)])
+Pred.pcs<-predict(pca1997P90,train_data[,c(95:104)])
 x_train$PCA1_1997P90=Pred.pcs[,1] 
 x_train$PCA2_1997P90=Pred.pcs[,2]
 x_train$PCA3_1997P90=Pred.pcs[,3]
 
 x_train
 
-# test_data <- dataP2D1[-inTrain,] #Random
-test_data <- dataP2D1[inTrain$test,] # Kennard Stone
+test_data <- dataP2D1[-inTrain,] #Random
+# test_data <- dataP2D1[inTrain$test,] # Kennard Stone
 # test_data <- dataP2D1[-indx$index_samples,] # CLHS
 
-y_test <- test_data[,140]
-x_test <- test_data[c(2:41,102:139)]
+y_test <- test_data[,143]
+x_test <- test_data[c(2:44,105:142)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
 x_test <- data.frame(SOC_1997t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca1996Med,test_data[,c(42:51)])
+Pred.pcs<-predict(pca1996Med,test_data[,c(45:54)])
 x_test$PCA1_1996Med=Pred.pcs[,1] 
 x_test$PCA2_1996Med=Pred.pcs[,2]
 x_test$PCA3_1996Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca1996P10,test_data[,c(52:61)])
+Pred.pcs<-predict(pca1996P10,test_data[,c(55:64)])
 x_test$PCA1_1996P10=Pred.pcs[,1] 
 x_test$PCA2_1996P10=Pred.pcs[,2]
 x_test$PCA3_1996P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1996P90,test_data[,c(62:71)])
+Pred.pcs<-predict(pca1996P90,test_data[,c(65:74)])
 x_test$PCA1_1996P90=Pred.pcs[,1] 
 x_test$PCA2_1996P90=Pred.pcs[,2]
 x_test$PCA3_1996P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997Med,test_data[,c(72:81)])
+Pred.pcs<-predict(pca1997Med,test_data[,c(75:84)])
 x_test$PCA1_1997Med=Pred.pcs[,1] 
 x_test$PCA2_1997Med=Pred.pcs[,2]
 x_test$PCA3_1997Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997P10,test_data[,c(82:91)])
+Pred.pcs<-predict(pca1997P10,test_data[,c(85:94)])
 x_test$PCA1_1997P10=Pred.pcs[,1] 
 x_test$PCA2_1997P10=Pred.pcs[,2]
 x_test$PCA3_1997P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1997P90,test_data[,c(92:101)])
+Pred.pcs<-predict(pca1997P90,test_data[,c(95:104)])
 x_test$PCA1_1997P90=Pred.pcs[,1] 
 x_test$PCA2_1997P90=Pred.pcs[,2]
 x_test$PCA3_1997P90=Pred.pcs[,3]
 
-x_train$geology_9 <- NULL
-x_train$geology_11 <- NULL
+summary(x_train)
 
-x_test$geology_9 <- NULL
-x_test$geology_11 <- NULL
+
+
+summary(x_test)
+
+
 
 train_data <- x_train
 test_data <- x_test
@@ -313,7 +320,7 @@ train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
   set.seed(1841)
-  (bor <- Boruta(x = train_data[,c(2:95)],
+  (bor <- Boruta(x = train_data[,c(2:100)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 
@@ -338,7 +345,7 @@ names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
 preds <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-saveRDS(preds,"Outputs/NamesPreds/P2D1/PredictorsP2D1_01082022.rds")
+# saveRDS(preds,"Outputs/NamesPreds/P2D1/PredictorsP2D1_01082022.rds")
 
 # 7) Model fitting --------------------------------------------------------
 
@@ -355,13 +362,15 @@ rctrlG <- trainControl(method = "repeatedcv",
                        search = "grid"
 )
 
-grid <- expand.grid(mtry = c(3,5,6,8),
+grid <- expand.grid(mtry = c(3,5,7),
                     splitrule = c("variance", "extratrees"),
                     min.node.size = c(2,3,4,5)
 )
 
 set.seed(1629)
-model_rf <- train(fm,
+names(train_data)
+
+model_rf <- caret::train(fm,
                   data=train_data,
                   method = "ranger",
                   trControl = rctrlG,
@@ -370,7 +379,7 @@ model_rf <- train(fm,
                   importance = "impurity"
 )
 model_rf
-model_rf$finalModel
+model_rf$finalModel$r.squared
 model_rf$bestTune
 
 mod_imp <- varImp(model_rf)
@@ -485,7 +494,7 @@ importance(model_qrf,type = 2)
 pred_qrf <- predict(model_qrf, newdata = test_data[,preds])
 (qrf.goof <- goof(observed = exp(test_data$SOC_1997t), predicted = exp(pred_qrf[,2])))
 
-saveRDS(model_qrf,"Outputs/Models/P2D1/ModelP2D1qrf_010822.rds")
+# saveRDS(model_qrf,"Outputs/Models/P2D1/ModelP2D1qrf_010822.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -543,7 +552,7 @@ writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P2D1/PCA1_1996Med.tif
 
 model_qrf <- readRDS("Outputs/Models/P2D1/ModelP2D1qrf_010822.rds")
 print(model_qrf)
-
+model_qrf$importance
 covP2 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
            stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP1996_1997.tif"))
 names(covP2) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesStatPreds.rds"),

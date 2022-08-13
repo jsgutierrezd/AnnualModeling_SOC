@@ -111,6 +111,9 @@ summary(dataP3D1)
 dataP3D1$ndviP10_2008 <- ifelse(dataP3D1$ndviP10_2008=="Inf"|dataP3D1$ndviP10_2008=="-Inf",NA,dataP3D1$ndviP10_2008)
 dataP3D1$strP10_2008 <- ifelse(dataP3D1$strP10_2008=="Inf"|dataP3D1$strP10_2008=="-Inf",NA,dataP3D1$strP10_2008)
 dataP3D1$strP10_2009 <- ifelse(dataP3D1$strP10_2009=="Inf"|dataP3D1$strP10_2009=="-Inf",NA,dataP3D1$strP10_2009)
+dataP3D1$geology_9 <- NULL
+dataP3D1$geology_3 <- NULL
+dataP3D1$geology_11 <- NULL
 dataP3D1 <- dataP3D1 %>% na.omit
 summary(dataP3D1)
 names(dataP3D1)
@@ -141,59 +144,59 @@ inTrain <- createDataPartition(y = dataP3D1$SOC_2009t, p = .70, list = FALSE) # 
 train_data <- dataP3D1[ inTrain,] %>% data.frame #Random
 # train_data <- dataP3D1[ inTrain$model,] %>% data.frame #Kennard Stone
 # train_data <- dataP3D1[indx$index_samples,] %>% data.frame  # CLHS
-
-y_train <- train_data[,140]
-x_train <- train_data[,c(2:41,102:139)]
+names(train_data)
+y_train <- train_data[,143]
+x_train <- train_data[,c(2:44,105:142)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
 x_train <- data.frame(SOC_2009t=y_train,x_train)
 
 # 6) PCA on spectral indices ----------------------------------------------
-pca2008Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
+pca2008Med<-prcomp(train_data[,c(45:54)], scale=TRUE) 
 summary(pca2008Med)
 (corvar <- pca2008Med$rotation %*% diag(pca2008Med$sdev))
-Pred.pcs<-predict(pca2008Med,train_data[,c(42:51)])
+Pred.pcs<-predict(pca2008Med,train_data[,c(45:54)])
 x_train$PCA1_2008Med=Pred.pcs[,1] 
 x_train$PCA2_2008Med=Pred.pcs[,2]
 x_train$PCA3_2008Med=Pred.pcs[,3] 
 
-pca2008P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
+pca2008P10<-prcomp(train_data[,c(55:64)], scale=TRUE) 
 summary(pca2008P10)
 (corvar <- pca2008P10$rotation %*% diag(pca2008P10$sdev))
-Pred.pcs<-predict(pca2008P10,train_data[,c(52:61)])
+Pred.pcs<-predict(pca2008P10,train_data[,c(55:64)])
 x_train$PCA1_2008P10=Pred.pcs[,1] 
 x_train$PCA2_2008P10=Pred.pcs[,2]
 x_train$PCA3_2008P10=Pred.pcs[,3]
 
-pca2008P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
+pca2008P90<-prcomp(train_data[,c(65:74)], scale=TRUE) 
 summary(pca2008P90)
 (corvar <- pca2008P90$rotation %*% diag(pca2008P90$sdev))
-Pred.pcs<-predict(pca2008P90,train_data[,c(62:71)])
+Pred.pcs<-predict(pca2008P90,train_data[,c(65:74)])
 x_train$PCA1_2008P90=Pred.pcs[,1] 
 x_train$PCA2_2008P90=Pred.pcs[,2]
 x_train$PCA3_2008P90=Pred.pcs[,3]
 
-pca2009Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
+pca2009Med<-prcomp(train_data[,c(75:84)], scale=TRUE) 
 summary(pca2009Med)
 (corvar <- pca2009Med$rotation %*% diag(pca2009Med$sdev))
-Pred.pcs<-predict(pca2009Med,train_data[,c(72:81)])
+Pred.pcs<-predict(pca2009Med,train_data[,c(75:84)])
 x_train$PCA1_2009Med=Pred.pcs[,1] 
 x_train$PCA2_2009Med=Pred.pcs[,2]
 x_train$PCA3_2009Med=Pred.pcs[,3]
 
-pca2009P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
+pca2009P10<-prcomp(train_data[,c(85:94)], scale=TRUE) 
 summary(pca2009P10)
 (corvar <- pca2009P10$rotation %*% diag(pca2009P10$sdev))
-Pred.pcs<-predict(pca2009P10,train_data[,c(82:91)])
+Pred.pcs<-predict(pca2009P10,train_data[,c(85:94)])
 x_train$PCA1_2009P10=Pred.pcs[,1] 
 x_train$PCA2_2009P10=Pred.pcs[,2]
 x_train$PCA3_2009P10=Pred.pcs[,3]
 
-pca2009P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
+pca2009P90<-prcomp(train_data[,c(95:104)], scale=TRUE) 
 summary(pca2009P90)
 (corvar <- pca2009P90$rotation %*% diag(pca2009P90$sdev))
-Pred.pcs<-predict(pca2009P90,train_data[,c(92:101)])
+Pred.pcs<-predict(pca2009P90,train_data[,c(95:104)])
 x_train$PCA1_2009P90=Pred.pcs[,1] 
 x_train$PCA2_2009P90=Pred.pcs[,2]
 x_train$PCA3_2009P90=Pred.pcs[,3]
@@ -204,47 +207,43 @@ test_data <- dataP3D1[-inTrain,] #Random
 # test_data <- dataP3D1[inTrain$test,] # Kennard Stone
 # test_data <- dataP3D1[-indx$index_samples,] # CLHS
 
-y_test <- test_data[,140]
-x_test <- test_data[c(2:41,102:139)]
+y_test <- test_data[,143]
+x_test <- test_data[c(2:44,105:142)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
 x_test <- data.frame(SOC_2009t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca2008Med,test_data[,c(42:51)])
+Pred.pcs<-predict(pca2008Med,test_data[,c(45:54)])
 x_test$PCA1_2008Med=Pred.pcs[,1] 
 x_test$PCA2_2008Med=Pred.pcs[,2]
 x_test$PCA3_2008Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca2008P10,test_data[,c(52:61)])
+Pred.pcs<-predict(pca2008P10,test_data[,c(55:64)])
 x_test$PCA1_2008P10=Pred.pcs[,1] 
 x_test$PCA2_2008P10=Pred.pcs[,2]
 x_test$PCA3_2008P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2008P90,test_data[,c(62:71)])
+Pred.pcs<-predict(pca2008P90,test_data[,c(65:74)])
 x_test$PCA1_2008P90=Pred.pcs[,1] 
 x_test$PCA2_2008P90=Pred.pcs[,2]
 x_test$PCA3_2008P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2009Med,test_data[,c(72:81)])
+Pred.pcs<-predict(pca2009Med,test_data[,c(75:84)])
 x_test$PCA1_2009Med=Pred.pcs[,1] 
 x_test$PCA2_2009Med=Pred.pcs[,2]
 x_test$PCA3_2009Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2009P10,test_data[,c(82:91)])
+Pred.pcs<-predict(pca2009P10,test_data[,c(85:94)])
 x_test$PCA1_2009P10=Pred.pcs[,1] 
 x_test$PCA2_2009P10=Pred.pcs[,2]
 x_test$PCA3_2009P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca2009P90,test_data[,c(92:101)])
+Pred.pcs<-predict(pca2009P90,test_data[,c(95:104)])
 x_test$PCA1_2009P90=Pred.pcs[,1] 
 x_test$PCA2_2009P90=Pred.pcs[,2]
 x_test$PCA3_2009P90=Pred.pcs[,3]
 
-x_train$geology_9 <- NULL
-x_train$geology_11 <- NULL
 
-x_test$geology_9 <- NULL
-x_test$geology_11 <- NULL
 
 train_data <- x_train
 test_data <- x_test
@@ -261,7 +260,7 @@ train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
   set.seed(1901)
-  (bor <- Boruta(x = train_data[,c(2:95)],
+  (bor <- Boruta(x = train_data[,c(2,3,8:95)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 
@@ -484,9 +483,9 @@ fm
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
 
-Pred.pcs.layers1 <- predict(covP3[[c(91:100)]],pca2009P90,cores=15)
-writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P3D1/PCA1_2009P90.tif",overwrite=T)
-
+# Pred.pcs.layers1 <- predict(covP3[[c(91:100)]],pca2009P90,cores=15)
+# writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P3D1/PCA1_2009P90.tif",overwrite=T)
+# 
 
 
 # 8.1) Maps generation ----------------------------------------------------
@@ -500,22 +499,22 @@ names(covP3) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/Year
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP2008_2009.rds"))
 
 
-PCA1_2009P90 <- raster("ExtraCovariates/P3D1/PCA1_2009P90.tif")
+# PCA1_2009P90 <- raster("ExtraCovariates/P3D1/PCA1_2009P90.tif")
 
-covP3 <- stack(covP3,PCA1_2009P90)
-fm
-names(covP3[[-33]])
+# covP3 <- stack(covP3,PCA1_2009P90)
+# fm
+# names(covP3[[-33]])
 
 covP3 <- covP3[[preds]]
 
 beginCluster(n=detectCores()-2,type='SOCK')
 
-covP3sc <- clusterR(covP3[[-33]], scale, 
-                    args=list(center = min_train[preds[-33]],
-                              scale = max_train[preds[-33]]-
-                                min_train[preds[-33]]))
+covP3sc <- clusterR(covP3, scale, 
+                    args=list(center = min_train[preds],
+                              scale = max_train[preds]-
+                                min_train[preds]))
 
-covP3sc <- stack(covP3sc,PCA1_2009P90)
+# covP3sc <- stack(covP3sc,PCA1_2009P90)
 names(covP3sc) <- preds
 
 median <- clusterR(covP3sc, predict,

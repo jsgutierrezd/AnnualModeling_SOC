@@ -114,6 +114,9 @@ summary(dataP1D2)
 dataP1D2$bsiP10_1985 <- ifelse(dataP1D2$bsiP10_1985=="Inf"|dataP1D2$bsiP10_1985=="-Inf",NA,dataP1D2$bsiP10_1985)
 dataP1D2$strP10_1985 <- ifelse(dataP1D2$strP10_1985=="Inf"|dataP1D2$strP10_1985=="-Inf",NA,dataP1D2$strP10_1985)
 dataP1D2$strP10_1986 <- ifelse(dataP1D2$strP10_1986=="Inf"|dataP1D2$strP10_1986=="-Inf",NA,dataP1D2$strP10_1986)
+dataP1D2$geology_9 <- NULL
+dataP1D2$geology_11 <- NULL
+dataP1D2$geology_3 <- NULL
 dataP1D2 <- dataP1D2 %>% na.omit
 summary(dataP1D2)
 names(dataP1D2)
@@ -145,8 +148,10 @@ inTrain <- kenStone(dataP1D2, k = nrow(dataP1D2)*0.70, metric = "mahal") # Kenna
 # train_data <- dataP1D2[ inTrain,] %>% data.frame #Random
 train_data <- dataP1D2[ inTrain$model,] %>% data.frame #Kennard Stone
 # train_data <- dataP1D2[indx$index_samples,] # CLHS
-y_train <- train_data[,140]
-x_train <- train_data[,c(2:41,102:139)]
+
+names(train_data)
+y_train <- train_data[,147]
+x_train <- train_data[,c(2:44,104:142)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
@@ -154,50 +159,50 @@ x_train <- data.frame(SOC_1986t=y_train,x_train)
 
 # 6) PCA on spectral indices ----------------------------------------------
 names(train_data)
-pca1985Med<-prcomp(train_data[,c(42:51)], scale=TRUE) 
+pca1985Med<-prcomp(train_data[,c(45:54)], scale=TRUE) 
 summary(pca1985Med)
 (corvar <- pca1985Med$rotation %*% diag(pca1985Med$sdev))
-Pred.pcs<-predict(pca1985Med,train_data[,c(42:51)])
+Pred.pcs<-predict(pca1985Med,train_data[,c(45:54)])
 x_train$PCA1_1985Med=Pred.pcs[,1] 
 x_train$PCA2_1985Med=Pred.pcs[,2]
 x_train$PCA3_1985Med=Pred.pcs[,3] 
 
-pca1985P10<-prcomp(train_data[,c(52:61)], scale=TRUE) 
+pca1985P10<-prcomp(train_data[,c(55:64)], scale=TRUE) 
 summary(pca1985P10)
 (corvar <- pca1985P10$rotation %*% diag(pca1985P10$sdev))
-Pred.pcs<-predict(pca1985P10,train_data[,c(52:61)])
+Pred.pcs<-predict(pca1985P10,train_data[,c(55:64)])
 x_train$PCA1_1985P10=Pred.pcs[,1] 
 x_train$PCA2_1985P10=Pred.pcs[,2]
 x_train$PCA3_1985P10=Pred.pcs[,3]
 
-pca1985P90<-prcomp(train_data[,c(62:71)], scale=TRUE) 
+pca1985P90<-prcomp(train_data[,c(65:74)], scale=TRUE) 
 summary(pca1985P90)
 (corvar <- pca1985P90$rotation %*% diag(pca1985P90$sdev))
-Pred.pcs<-predict(pca1985P90,train_data[,c(62:71)])
+Pred.pcs<-predict(pca1985P90,train_data[,c(65:74)])
 x_train$PCA1_1985P90=Pred.pcs[,1] 
 x_train$PCA2_1985P90=Pred.pcs[,2]
 x_train$PCA3_1985P90=Pred.pcs[,3]
 
-pca1986Med<-prcomp(train_data[,c(72:81)], scale=TRUE) 
+pca1986Med<-prcomp(train_data[,c(75:84)], scale=TRUE) 
 summary(pca1986Med)
 (corvar <- pca1986Med$rotation %*% diag(pca1986Med$sdev))
-Pred.pcs<-predict(pca1986Med,train_data[,c(72:81)])
+Pred.pcs<-predict(pca1986Med,train_data[,c(75:84)])
 x_train$PCA1_1986Med=Pred.pcs[,1] 
 x_train$PCA2_1986Med=Pred.pcs[,2]
 x_train$PCA3_1986Med=Pred.pcs[,3]
 
-pca1986P10<-prcomp(train_data[,c(82:91)], scale=TRUE) 
+pca1986P10<-prcomp(train_data[,c(85:94)], scale=TRUE) 
 summary(pca1986P10)
 (corvar <- pca1986P10$rotation %*% diag(pca1986P10$sdev))
-Pred.pcs<-predict(pca1986P10,train_data[,c(82:91)])
+Pred.pcs<-predict(pca1986P10,train_data[,c(85:94)])
 x_train$PCA1_1986P10=Pred.pcs[,1] 
 x_train$PCA2_1986P10=Pred.pcs[,2]
 x_train$PCA3_1986P10=Pred.pcs[,3]
 
-pca1986P90<-prcomp(train_data[,c(92:101)], scale=TRUE) 
+pca1986P90<-prcomp(train_data[,c(95:104)], scale=TRUE) 
 summary(pca1986P90)
 (corvar <- pca1986P90$rotation %*% diag(pca1986P90$sdev))
-Pred.pcs<-predict(pca1986P90,train_data[,c(92:101)])
+Pred.pcs<-predict(pca1986P90,train_data[,c(95:104)])
 x_train$PCA1_1986P90=Pred.pcs[,1] 
 x_train$PCA2_1986P90=Pred.pcs[,2]
 x_train$PCA3_1986P90=Pred.pcs[,3]
@@ -207,51 +212,41 @@ x_train
 # test_data <- dataP1D2[-inTrain,] #Random
 test_data <- dataP1D2[inTrain$test,] # Kennard Stone
 # test_data <- dataP1D2[-indx$index_samples,] # CLHS
-y_test <- test_data[,140]
-x_test <- test_data[c(2:41,102:139)]
+y_test <- test_data[,147]
+x_test <- test_data[c(2:44,104:142)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
 x_test <- data.frame(SOC_1986t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca1985Med,test_data[,c(42:51)])
+Pred.pcs<-predict(pca1985Med,test_data[,c(45:54)])
 x_test$PCA1_1985Med=Pred.pcs[,1] 
 x_test$PCA2_1985Med=Pred.pcs[,2]
 x_test$PCA3_1985Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca1985P10,test_data[,c(52:61)])
+Pred.pcs<-predict(pca1985P10,test_data[,c(55:64)])
 x_test$PCA1_1985P10=Pred.pcs[,1] 
 x_test$PCA2_1985P10=Pred.pcs[,2]
 x_test$PCA3_1985P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1985P90,test_data[,c(62:71)])
+Pred.pcs<-predict(pca1985P90,test_data[,c(65:74)])
 x_test$PCA1_1985P90=Pred.pcs[,1] 
 x_test$PCA2_1985P90=Pred.pcs[,2]
 x_test$PCA3_1985P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986Med,test_data[,c(72:81)])
+Pred.pcs<-predict(pca1986Med,test_data[,c(75:84)])
 x_test$PCA1_1986Med=Pred.pcs[,1] 
 x_test$PCA2_1986Med=Pred.pcs[,2]
 x_test$PCA3_1986Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986P10,test_data[,c(82:91)])
+Pred.pcs<-predict(pca1986P10,test_data[,c(85:94)])
 x_test$PCA1_1986P10=Pred.pcs[,1] 
 x_test$PCA2_1986P10=Pred.pcs[,2]
 x_test$PCA3_1986P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986P90,test_data[,c(92:101)])
+Pred.pcs<-predict(pca1986P90,test_data[,c(95:104)])
 x_test$PCA1_1986P90=Pred.pcs[,1] 
 x_test$PCA2_1986P90=Pred.pcs[,2]
 x_test$PCA3_1986P90=Pred.pcs[,3]
-
-x_train$geology_9 <- NULL
-x_train$geology_11 <- NULL
-x_train$geology_2 <- NULL
-x_train$geology_3 <- NULL
-
-x_test$geology_9 <- NULL
-x_test$geology_11 <- NULL
-x_test$geology_2 <- NULL
-x_test$geology_3 <- NULL
 
 train_data <- x_train
 test_data <- x_test
@@ -261,13 +256,13 @@ train_data <- train_data[complete.cases(train_data),]
 summary(test_data)
 test_data <- test_data[complete.cases(test_data),]
 
-train_data$label <- "Train"
-test_data$label <- "Test"
-df <- rbind(train_data,test_data)
-ggplot(df, aes(x=SOC_1986t, color=label)) +
-  geom_density()
-train_data$label <- NULL
-test_data$label <- NULL
+# train_data$label <- "Train"
+# test_data$label <- "Test"
+# df <- rbind(train_data,test_data)
+# ggplot(df, aes(x=SOC_1986t, color=label)) +
+#   geom_density()
+# train_data$label <- NULL
+# test_data$label <- NULL
 
 # Novelty detection -------------------------------------------------------
 
@@ -298,7 +293,7 @@ train_data <- train_data %>% na.omit %>% data.frame
 {
   start <- Sys.time()
   set.seed(845)
-  (bor <- Boruta(x = train_data[,c(2:93)],
+  (bor <- Boruta(x = train_data[,c(2:101)],
                  y = train_data[,1], 
                  #data = train_data, 
                  doTrace = 0, 

@@ -113,6 +113,8 @@ summary(dataP1D1)
 dataP1D1$bsiP10_1985 <- ifelse(dataP1D1$bsiP10_1985=="Inf"|dataP1D1$bsiP10_1985=="-Inf",NA,dataP1D1$bsiP10_1985)
 dataP1D1$strP10_1985 <- ifelse(dataP1D1$strP10_1985=="Inf"|dataP1D1$strP10_1985=="-Inf",NA,dataP1D1$strP10_1985)
 dataP1D1$strP10_1986 <- ifelse(dataP1D1$strP10_1986=="Inf"|dataP1D1$strP10_1986=="-Inf",NA,dataP1D1$strP10_1986)
+dataP1D1$geology_9 <- NULL
+dataP1D1$geology_11 <- NULL
 dataP1D1 <- dataP1D1 %>% na.omit
 names(dataP1D1)
 
@@ -135,10 +137,11 @@ set.seed(840)
 inTrain <- createDataPartition(y =dataP1D1$SOC_1986t, p = .70, list = FALSE) #Random
 # inTrain <- kenStone(dataP1D1, k = nrow(dataP1D1)*0.70, metric = "mahal") # Kennard Stone
 
+names(dataP1D1)
 train_data <- dataP1D1[ inTrain,] %>% data.frame #Random
 # train_data <- dataP1D1[ inTrain$model,] %>% data.frame #Kennard Stone
-y_train <- train_data[,150]
-x_train <- train_data[,c(2:47,108:145)]
+y_train <- train_data[,148]
+x_train <- train_data[,c(2:45,106:147)]
 max_train <- apply(x_train, 2, max)
 min_train <- apply(x_train, 2, min)
 x_train <- scale(x_train, center = min_train, scale = max_train-min_train)
@@ -146,50 +149,50 @@ x_train <- data.frame(SOC_1986t=y_train,x_train)
 
 # 6) PCA on spectral indices ----------------------------------------------
 names(train_data)
-pca1985Med<-prcomp(train_data[,c(48:57)], scale=TRUE) 
+pca1985Med<-prcomp(train_data[,c(46:55)], scale=TRUE) 
 summary(pca1985Med)
 (corvar <- pca1985Med$rotation %*% diag(pca1985Med$sdev))
-Pred.pcs<-predict(pca1985Med,train_data[,c(48:57)])
+Pred.pcs<-predict(pca1985Med,train_data[,c(46:55)])
 x_train$PCA1_1985Med=Pred.pcs[,1] 
 x_train$PCA2_1985Med=Pred.pcs[,2]
 x_train$PCA3_1985Med=Pred.pcs[,3] 
 
-pca1985P10<-prcomp(train_data[,c(58:67)], scale=TRUE) 
+pca1985P10<-prcomp(train_data[,c(56:65)], scale=TRUE) 
 summary(pca1985P10)
 (corvar <- pca1985P10$rotation %*% diag(pca1985P10$sdev))
-Pred.pcs<-predict(pca1985P10,train_data[,c(58:67)])
+Pred.pcs<-predict(pca1985P10,train_data[,c(56:65)])
 x_train$PCA1_1985P10=Pred.pcs[,1] 
 x_train$PCA2_1985P10=Pred.pcs[,2]
 x_train$PCA3_1985P10=Pred.pcs[,3]
 
-pca1985P90<-prcomp(train_data[,c(68:77)], scale=TRUE) 
+pca1985P90<-prcomp(train_data[,c(66:75)], scale=TRUE) 
 summary(pca1985P90)
 (corvar <- pca1985P90$rotation %*% diag(pca1985P90$sdev))
-Pred.pcs<-predict(pca1985P90,train_data[,c(68:77)])
+Pred.pcs<-predict(pca1985P90,train_data[,c(66:75)])
 x_train$PCA1_1985P90=Pred.pcs[,1] 
 x_train$PCA2_1985P90=Pred.pcs[,2]
 x_train$PCA3_1985P90=Pred.pcs[,3]
 
-pca1986Med<-prcomp(train_data[,c(78:87)], scale=TRUE) 
+pca1986Med<-prcomp(train_data[,c(76:85)], scale=TRUE) 
 summary(pca1986Med)
 (corvar <- pca1986Med$rotation %*% diag(pca1986Med$sdev))
-Pred.pcs<-predict(pca1986Med,train_data[,c(78:87)])
+Pred.pcs<-predict(pca1986Med,train_data[,c(76:85)])
 x_train$PCA1_1986Med=Pred.pcs[,1] 
 x_train$PCA2_1986Med=Pred.pcs[,2]
 x_train$PCA3_1986Med=Pred.pcs[,3]
 
-pca1986P10<-prcomp(train_data[,c(88:97)], scale=TRUE) 
+pca1986P10<-prcomp(train_data[,c(86:95)], scale=TRUE) 
 summary(pca1986P10)
 (corvar <- pca1986P10$rotation %*% diag(pca1986P10$sdev))
-Pred.pcs<-predict(pca1986P10,train_data[,c(88:97)])
+Pred.pcs<-predict(pca1986P10,train_data[,c(86:95)])
 x_train$PCA1_1986P10=Pred.pcs[,1] 
 x_train$PCA2_1986P10=Pred.pcs[,2]
 x_train$PCA3_1986P10=Pred.pcs[,3]
 
-pca1986P90<-prcomp(train_data[,c(98:107)], scale=TRUE) 
+pca1986P90<-prcomp(train_data[,c(96:105)], scale=TRUE) 
 summary(pca1986P90)
 (corvar <- pca1986P90$rotation %*% diag(pca1986P90$sdev))
-Pred.pcs<-predict(pca1986P90,train_data[,c(98:107)])
+Pred.pcs<-predict(pca1986P90,train_data[,c(96:105)])
 x_train$PCA1_1986P90=Pred.pcs[,1] 
 x_train$PCA2_1986P90=Pred.pcs[,2]
 x_train$PCA3_1986P90=Pred.pcs[,3]
@@ -201,47 +204,41 @@ test_data <- dataP1D1[-inTrain,] #Random
 # test_data <- dataP1D1[-indx$index_samples,] # CLHS
 
 
-y_test <- test_data[,150]
-x_test <- test_data[c(2:47,108:145)]
+y_test <- test_data[,148]
+x_test <- test_data[c(2:45,106:147)]
 x_test <- scale(x_test, center = min_train, scale = max_train-min_train)
 x_test <- data.frame(SOC_1986t=y_test,x_test)
 
 
-Pred.pcs<-predict(pca1985Med,test_data[,c(48:57)])
+Pred.pcs<-predict(pca1985Med,test_data[,c(46:55)])
 x_test$PCA1_1985Med=Pred.pcs[,1] 
 x_test$PCA2_1985Med=Pred.pcs[,2]
 x_test$PCA3_1985Med=Pred.pcs[,3] 
 
-Pred.pcs<-predict(pca1985P10,test_data[,c(58:67)])
+Pred.pcs<-predict(pca1985P10,test_data[,c(56:65)])
 x_test$PCA1_1985P10=Pred.pcs[,1] 
 x_test$PCA2_1985P10=Pred.pcs[,2]
 x_test$PCA3_1985P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1985P90,test_data[,c(68:77)])
+Pred.pcs<-predict(pca1985P90,test_data[,c(66:75)])
 x_test$PCA1_1985P90=Pred.pcs[,1] 
 x_test$PCA2_1985P90=Pred.pcs[,2]
 x_test$PCA3_1985P90=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986Med,test_data[,c(78:87)])
+Pred.pcs<-predict(pca1986Med,test_data[,c(76:85)])
 x_test$PCA1_1986Med=Pred.pcs[,1] 
 x_test$PCA2_1986Med=Pred.pcs[,2]
 x_test$PCA3_1986Med=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986P10,test_data[,c(88:97)])
+Pred.pcs<-predict(pca1986P10,test_data[,c(86:95)])
 x_test$PCA1_1986P10=Pred.pcs[,1] 
 x_test$PCA2_1986P10=Pred.pcs[,2]
 x_test$PCA3_1986P10=Pred.pcs[,3]
 
-Pred.pcs<-predict(pca1986P90,test_data[,c(98:107)])
+Pred.pcs<-predict(pca1986P90,test_data[,c(96:105)])
 x_test$PCA1_1986P90=Pred.pcs[,1] 
 x_test$PCA2_1986P90=Pred.pcs[,2]
 x_test$PCA3_1986P90=Pred.pcs[,3]
-
-x_train$geology_9 <- NULL
-x_train$geology_11 <- NULL
-
-x_test$geology_9 <- NULL
-x_test$geology_11 <- NULL
 
 train_data <- x_train
 test_data <- x_test
@@ -285,7 +282,7 @@ names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
 preds <- names(bor$finalDecision[bor$finalDecision %in% c("Confirmed")])
 
-# saveRDS(preds,"Outputs/NamesPreds/P1D1/PredictorsP1D1_01082022.rds")
+saveRDS(preds,"Outputs/NamesPreds/P1D1/PredictorsP1D1_08082022.rds")
 
 # 7) Model fitting --------------------------------------------------------
 
@@ -296,8 +293,8 @@ fm
 # 7.1) Randon forest - Ranger ---------------------------------------------
 
 rctrlG <- trainControl(method = "repeatedcv",
-                       number = 20,
-                       repeats = 20,
+                       number = 10,
+                       repeats = 10,
                        returnResamp = "all",
                        search = "grid"
 )
@@ -316,7 +313,7 @@ model_rf <- train(fm,
                   num.trees = 500,
                   importance = "impurity"
 )
-model_rf
+model_rf$finalModel$variable.importance
 model_rf$finalModel
 model_rf$bestTune
 
@@ -390,8 +387,8 @@ xgb_trcontrol = trainControl(
   allowParallel = TRUE
 )
 
-gbmGrid <-  expand.grid(interaction.depth = c(1,3), 
-                        n.trees = seq(20000,30000,by=1000), 
+gbmGrid <-  expand.grid(interaction.depth = 3, 
+                        n.trees = 30000, 
                         shrinkage = 0.01,
                         n.minobsinnode = 5)
 
@@ -420,7 +417,7 @@ model_qrf <- quantregForest(y = train_data[,"SOC_1986t"],
                             data=train_data,
                             keep.inbag=TRUE,
                             mtry = as.numeric(model_rf$bestTune))
-model_qrf
+model_qrf$importance
 importance(model_qrf,type = 2)
 
 
@@ -428,7 +425,7 @@ pred_qrf <- predict(model_qrf, newdata = test_data[,preds])
 (qrf.goof <- goof(observed = exp(test_data$SOC_1986t), predicted = exp(pred_qrf[,2])))
 
 
-saveRDS(model_qrf,"Outputs/Models/P1D1/ModelP1D1qrf_290722.rds")
+saveRDS(model_qrf,"Outputs/Models/P1D1/ModelP1D1qrf_08082022.rds")
 
 
 # 7.7) Caret model ensemble -----------------------------------------------
@@ -473,14 +470,14 @@ fm
 
 # Not mandatory) Missing covariates - i.e. PCA layers ---------------------
 
-# Pred.pcs.layers1 <- predict(covP1[[c(41:50)]],pca1985Med,cores=15)
+Pred.pcs.layers1 <- predict(covP1[[c(67:76)]],pca1985P90,cores=15)
 # 
 # 
-# writeRaster(raster(Pred.pcs.layers1[[1]]),"ExtraCovariates/P1D1/PCA1_1985Med.tif",overwrite=T)
+writeRaster(raster(Pred.pcs.layers1[[2]]),"ExtraCovariates/P1D1/PCA2_1985P90.tif",overwrite=T)
 
 # 8.1) Maps generation ----------------------------------------------------
 
-model_qrf <- readRDS("Outputs/Models/P1D1/ModelP1D1qrf_290722.rds")
+model_qrf <- readRDS("Outputs/Models/P1D1/ModelP1D1qrf_08082022.rds")
 print(model_qrf)
 
 covP1 <- stack(stack("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/StatPreds.tif"),
@@ -489,6 +486,10 @@ names(covP1) <- c(readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/Year
                   readRDS("O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesDynPredsP1985_1986.rds"))
 
 names(covP1)
+covP1 <- covP1[[-c(145:148)]]
+PCA2_1985P90 <- raster("ExtraCovariates/P1D1/PCA2_1985P90.tif")
+covP1 <- stack(covP1,PCA2_1985P90)
+names(covP1)
 
 covP1 <- covP1[[preds]]
 
@@ -496,11 +497,12 @@ names(covP1)
 
 beginCluster(n=detectCores()-2,type='SOCK')
 
-covP1sc <- clusterR(covP1, scale, 
-                    args=list(center = min_train[preds],
-                              scale = max_train[preds]-
-                                min_train[preds]))
+covP1sc <- clusterR(covP1[[-16]], scale, 
+                    args=list(center = min_train[preds[-16]],
+                              scale = max_train[preds[-16]]-
+                                min_train[preds[-16]]))
 
+covP1sc <- stack(covP1sc,PCA2_1985P90)
 names(covP1sc) <- preds
 
 median <- clusterR(covP1sc, predict,
@@ -526,11 +528,11 @@ sd <- clusterR(covP1sc, predict,
                  args=list(model=model_qrf, what=sd))
 sd <- exp(sd)
 
-writeRaster(median,"Outputs/Layers/P1D1/ModelP1D1QrfMedian_290722.tif",overwrite=T)
-writeRaster(UppL,"Outputs/Layers/P1D1/ModelP1D1QrfUppL_290722.tif",overwrite=T)
-writeRaster(LowL,"Outputs/Layers/P1D1/ModelP1D1QrfLowL_290722.tif",overwrite=T)
-writeRaster(mean,"Outputs/Layers/P1D1/ModelP1D1QrfMean_290722.tif",overwrite=T)
-writeRaster(sd,"Outputs/Layers/P1D1/ModelP1D1QrfSd_290722.tif",overwrite=T)
+writeRaster(median,"Outputs/Layers/P1D1/ModelP1D1QrfMedian_080822.tif",overwrite=T)
+writeRaster(UppL,"Outputs/Layers/P1D1/ModelP1D1QrfUppL_080822.tif",overwrite=T)
+writeRaster(LowL,"Outputs/Layers/P1D1/ModelP1D1QrfLowL_080822.tif",overwrite=T)
+writeRaster(mean,"Outputs/Layers/P1D1/ModelP1D1QrfMean_080822.tif",overwrite=T)
+writeRaster(sd,"Outputs/Layers/P1D1/ModelP1D1QrfSd_080822.tif",overwrite=T)
 
 endCluster()
 

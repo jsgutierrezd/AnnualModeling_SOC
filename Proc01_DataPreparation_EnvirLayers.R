@@ -325,10 +325,28 @@ writeRaster(dummy19,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear
 saveRDS(names(dummy19),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/NamesFieldBlock19.rds")
 
 
+# d) Land use information taken from ESRI LULC maps -----------------------
+esri18 <- rast("C:/Users/au704633/OneDrive - Aarhus Universitet/Documents/AARHUS_PhD/DSMactivities/MonitoringGridData/SOCModeling/EnvironmLayers_30m/Organisms/LANDUSE/ESRILULC2018.tif") %>% 
+  terra::resample(geology[[1]],method="near")
+
+esri19 <- rast("C:/Users/au704633/OneDrive - Aarhus Universitet/Documents/AARHUS_PhD/DSMactivities/MonitoringGridData/SOCModeling/EnvironmLayers_30m/Organisms/LANDUSE/ESRILULC2019.tif") %>% 
+  terra::resample(geology[[1]],method="near")
+
+esri18d <- segregate(esri18)
+esri19d <- segregate(esri19)
+
+esri18d <- esri18d[[c(2,4,9)]]
+names(esri18d) <- c("Forest18","Crop18","Grass18")
+esri19d <- esri19d[[c(2,4,8)]]
+names(esri19d) <- c("Forest19","Crop19","Grass19")
+
+
+
 # d) Period 4 layers (organisms) ------------------------------------------
 
 organismsP4 <- c(ind2018med,ind2018p10,ind2018p90,
                  ind2019med,ind2019p10,ind2019p90,
+                 esri18d,esri19d
                  )
 
 
@@ -434,7 +452,7 @@ saveRDS(names(covP3),"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYea
 organismsP4 <- resample(organismsP4,StatPreds)
 climateP4 <- resample(climateP4,StatPreds)
 covP4 <- c(organismsP4,climateP4)
-terra::writeRaster(covP4,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019.tif",datatype="FLT4S",overwrite=T)
+terra::writeRaster(covP4,"O:/Tech_AGRO/Jord/Sebastian/Multiannual1986_2019/YearbyYear/DynPredsP2018_2019_.tif",datatype="FLT4S",overwrite=T)
 
 names(covP4) <- c(paste0(c("ndvi","kndvi","evi",
                            "savi","msavi","bsi",
